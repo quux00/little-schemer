@@ -1,3 +1,6 @@
+(ns little.cljr
+  (:use clojure.core))
+
 (def fail-tok "\n>>>>> FAIL: ")
 (defn header-str [func-name] (str "======= " func-name " tests ======="))
 
@@ -329,7 +332,6 @@
 (assert-eq '(1 2 3)   (rempick 4  '(1 2 3))     "6")
 (assert-eq '(1 2 3)   (rempick 5  '(1 2 3))     "7")
 
-
 (println (str "\n" (header-str "no-nums")))
 (assert-eq '(:a :b)       (no-nums '(:a :b))         "1")
 (assert-eq '(:a)          (no-nums '(:a 1 2))        "2")
@@ -338,6 +340,67 @@
 (assert-eq '(:a :b :c :d) (no-nums '(1 :a :b :c :d)) "5")
 (assert-eq '()            (no-nums '(1 2 3))         "6")
 (assert-eq '()            (no-nums '())              "7")
+
+(println (str "\n" (header-str "all-nums")))
+(assert-eq '()      (all-nums '(:a :b))         "1")
+(assert-eq '(1 2)   (all-nums '(:a 1 2))        "2")
+(assert-eq '(1 2)   (all-nums '(1 :a 2))        "3")
+(assert-eq '(1 2 3) (all-nums '(1 :a 2 :b 3))   "4")
+(assert-eq '(1)     (all-nums '(1 :a :b :c :d)) "5")
+(assert-eq '(1 2 3) (all-nums '(1 2 3))         "6")
+(assert-eq '()      (all-nums '())              "7")
+
+(println (str "\n" (header-str "occur")))
+(assert-eq 1  (occur :a '(:a :b))    "1")
+(assert-eq 0  (occur :x '(:a 1 2))   "2")
+(assert-eq 0  (occur :x '())         "3")
+(assert-eq 0  (occur nil '(:a 1 2))  "4")
+(assert-eq 3  (occur :a '(:a :a :a)) "5")
+(assert-eq 1  (occur :a '(:b 1 :a))  "6")
+
+(println (str "\n" (header-str "one?")))
+(assert-false (one? '(:a :b)) "1")
+(assert-false (one? :a)       "2")
+(assert-true  (one? 1)        "3")
+(assert-true  (one? (inc 0))  "4")
+(assert-false (one? :1)       "5")
+(assert-false (one? 0)        "6")
+(assert-false (one? 11)       "7")
+
+(println (str "\n" (header-str "rember*")))
+(assert-eq '()            (rember* :a '())                     "1")
+(assert-eq '()            (rember* :a '(:a))                   "2")
+(assert-eq '(:b)          (rember* :a '(:b))                   "3")
+(assert-eq '(:b :c :d)    (rember* :a '(:b :c :d))             "4")
+(assert-eq '(:b :c :d :d) (rember* :a '(:b :c :a :d :a :a :d)) "5")
+(assert-eq '((:b) (1 2))  (rember* :a '( (:a :b) (1 2)) )      "6")
+(assert-eq '((:b) (1 2))  (rember* :a '( (:a :b) (1 :a 2) :a)) "7")
+(assert-eq '(() (1 2) ((:c ())))
+           (rember* :a '( :a (:a) (1 :a 2) :a ((:c (:a)) )) )  "8")
+
+
+(println (str "\n" (header-str "insertR*")))
+(assert-eq '()            (insertR* 1 :a '())         "1")
+(assert-eq '(:a 1)        (insertR* 1 :a '(:a))       "2")
+(assert-eq '(:b)          (insertR* 1 :a '(:b))       "3")
+(assert-eq '(:b :c :d)    (insertR* 1 :a '(:b :c :d)) "4")
+(assert-eq '(:b :c :a 1 :d :a 1 :a 1 :d) 
+           (insertR* 1 :a '(:b :c :a :d :a :a :d))    "5")
+(assert-eq '((:a 1 :b) (1 2))  
+           (insertR* 1 :a '( (:a :b) (1 2)) )         "6")
+(assert-eq '((:a 1 :b) (1 :a 1 2) :a 1)
+            (insertR* 1 :a '( (:a :b) (1 :a 2) :a) )  "7")
+(assert-eq '( :a 1 (:a 1) (1 :a 1 2) :a 1 ((:c (:a 1))) )
+           (insertR* 1 :a '( :a (:a) (1 :a 2) :a ((:c (:a))) ) ) "8")
+
+(println (str "\n" (header-str "occur*")))
+(assert-eq 0  (occur* 1 '())                              "1")
+(assert-eq 1  (occur* :a '(:a))                           "2")
+(assert-eq 2  (occur* :a '(:a 1 :a))                      "3")
+(assert-eq 1  (occur* :a '((:a)))                         "4")
+(assert-eq 3  (occur* :a '((:a :a) (1 :a) (:x)))          "5")
+(assert-eq 3  (occur* :a '((:a ((:a :b) 1)) (1 :a) (:x))) "6")
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 (def end-time (System/currentTimeMillis))

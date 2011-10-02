@@ -1,15 +1,18 @@
-; ------------------- ;
-; ---[ Chapter 1 ]--- ; 
-; ------------------- ;
+(ns little.cljr
+  (:use clojure.core))
+
+;; ------------------- ;;
+;; ---[ Chapter 1 ]--- ;; 
+;; ------------------- ;;
 (defn atom?                       ; Ch.1, p.10
   "Predicate test for whether an entity is atom,
    where atom is defined as not a list (not (list? x))
    using the Clojure built-in list? predicate"
   [x] (not (list? x)))
 
-; ------------------- ;
-; ---[ Chapter 2 ]--- ; 
-; ------------------- ;
+;; ------------------- ;;
+;; ---[ Chapter 2 ]--- ;; 
+;; ------------------- ;;
 (defn lat?                        ; Ch.2, p.16
   "Predicate test for whether an entity is a \"list-of-atoms\",
    where atom is defined as not a list (not (list? x))
@@ -29,9 +32,9 @@
     false
     (or (= a (first lat)) (member? a (rest lat)))))
 
-; ------------------- ;
-; ---[ Chapter 3 ]--- ; 
-; ------------------- ;
+;; ------------------- ;;
+;; ---[ Chapter 3 ]--- ;; 
+;; ------------------- ;;
 
 ;; this version returns lat when lat is empty, so
 ;; better matches the book version
@@ -159,9 +162,9 @@
    :else (cons (first lat) (multisubst new old (rest lat)))))
 
 
-; ------------------- ;
-; ---[ Chapter 4 ]--- ; 
-; ------------------- ;
+;; ------------------- ;;
+;; ---[ Chapter 4 ]--- ;; 
+;; ------------------- ;;
 
 (defn o+                        ; Ch.4, p.60
   "Arithmetic plus operator. Requires two and only two args"
@@ -291,8 +294,9 @@
     (pick (dec n) (rest lat))))
 
 (defn rempick
-  "Using 1-based indexing of lists, remove the nth element of list +lat+
-   returning a new list with that element removed. See also pick func notes."
+  "Using 1-based indexing of lists, remove the nth element of list
+   +lat+ returning a new list with that element removed. See also
+   pick func notes."
   [n lat]
   (cond 
    (empty? lat) lat
@@ -308,5 +312,73 @@
    (number? (first lat)) (no-nums (rest lat))
    :else (cons (first lat) (no-nums (rest lat)))))
 
+(defn all-nums
+  "Selects out all numbers from a lat (list of atoms), returning
+   that new list-of-numbers (tuple, in Little Schemer lingo)"
+  [lat]
+  (cond
+   (empty? lat) lat
+   (number? (first lat)) (cons (first lat) (all-nums (rest lat)))
+   :else (all-nums (rest lat))))
+
+;; Note: I did not implement eqan? since Clojure's = function already
+;; works to compare numbers and non-numbers and I intend to use Clojure's
+;; = rather than my o= function
 
 
+(defn occur
+  "Counts the number of times the atom +a+ occurs in +lat+"
+  [a lat]
+  (cond
+   (empty? lat) 0
+   (= a (first lat)) (inc (occur a (rest lat)))
+   :else (occur a (rest lat))))
+
+(defn one?
+  "Predicate that evaluates if the atom passed is a number equal to 1"
+  [n]
+  ;; technically number? is not required here in Clojure, but it would
+  ;; be in Scheme (and they left it out in the book, tsk tsk)
+  (and (number? n) (= n 1)))
+
+
+;; ------------------- ;;
+;; ---[ Chapter 5 ]--- ;; 
+;; ------------------- ;;
+
+(defn rember*
+  "A version of rember (remove member) that will remove all occurences
+   of +a+ in +l+, no matter how deeply nested in inner lists it is.
+   Returns the new list."
+  [a l]
+  (if (empty? l)
+    l
+    (if (atom? (first l))
+      (if (= a (first l))
+        (rember* a (rest l))
+        (cons (first l) (rember* a (rest l))))
+      (cons (rember* a (first l)) (rember* a (rest l))))))
+
+(defn insertR*
+  "A version of insertR (insert +new+ to the right of +old+) that 
+   that will insert after all occurences of +a+ in +l+, no matter 
+   how deeply nested in inner lists it is. Returns the new list."
+  [new old l]
+  (if (empty? l) 
+    l
+    (if (atom? (first l))
+      (if (= old (first l))
+        (cons old (cons new (insertR* new old (rest l))))
+        (cons (first l) (insertR* new old (rest l))))
+      (cons (insertR* new old (first l)) (insertR* new old (rest l))))))
+
+
+(defn occur*
+  [a l]
+  (if (empty? l)
+    0
+    (if (atom? (first l))
+      (if (= a (first l))
+        (inc (occur* a (rest l)))
+        (occur* a (rest l)))
+      (+ (occur* a (first l)) (occur* a (rest l))))))
