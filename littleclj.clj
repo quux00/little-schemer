@@ -473,11 +473,169 @@
 ;; ------------------- ;;
 
 (defn numbered?
-  ""
+  "Predicate function that checks whether a single number (not in a
+   list) is passed in or an arithmetic expression with in-fix
+   notation in a list, such as (3 * (4 + 1)).  My version allows
+   the four basic arithmetic operations but :exp for exponentiation.
+   Note that this method is flawed in that it assumes you lists
+   have an odd number of entries and in in-fix notation.
+   For example: ((1 + 2) * 4 4) will return true, so this is NOT
+   a general purpose in fix arithmetic AST parser."
   [aexp]
-  (cond
+  (cond 
    (atom? aexp) (number? aexp)
-   (and (number? (first aexp)
-   (or (number? aexp) (= aexp *) (= aexp +) (= aexp :exp))
+   (and (numbered? (first aexp))
+        (numbered? (first (rest (rest aexp))))
+        (or (= (first (rest aexp)) '*)
+            (= (first (rest aexp)) '+)
+            (= (first (rest aexp)) '-)
+            (= (first (rest aexp)) '/)
+            (= (first (rest aexp)) 'exp))) true))
+
+(defn bk-numbered?
+  "book version of numbered?, which skips checking the
+   second (middle) value as to whether it is a valid operator."
+  [aexp]
+  (if (atom? aexp)
+    (number? aexp)
+    (and (bk-numbered? (first aexp))
+         (bk-numbered? (first (rest (rest aexp)))))))
+
+(defn value
+  "My version of the first value function. It uses number? instead
+   of atom? as its primary check and then checks the whole expression
+   is numbered? using that function.  Only then does it recurse into
+   the subexpressions to calculate their value.  Returns nil if +nexp+
+   is not a valid numbered arithmetic expression. It suffers the same
+   robustness flaws that numbered? does (see its doc)."
+  [nexp]
+  (if (number? nexp) 
+    nexp
+    (if (numbered? nexp)
+      (cond
+       (= (first (rest nexp)) '*) 
+       (* (value (first nexp)) (value (first (rest (rest nexp)))))
+       
+       (= (first (rest nexp)) '+) 
+       (+ (value (first nexp)) (value (first (rest (rest nexp)))))
+       
+       (= (first (rest nexp)) 'exp) 
+       (exp (value (first nexp)) (value (first (rest (rest nexp))))))
+      nil)))
+
+(defn bk-value
+  "Book version of value function. This version is prone to null
+   pointer exceptions if you throw mal-formed expressions such as:
+   ((1 2) exp 3)."
+  [nexp]
+  (cond 
+   (atom? nexp) nexp
+
+   (= (first (rest nexp)) '+) 
+   (+ (value (first nexp)) (value (first (rest (rest nexp)))))
+
+   (= (first (rest nexp)) '*) 
+   (* (value (first nexp)) (value (first (rest (rest nexp)))))
+    
+   (= (first (rest nexp)) 'exp) 
+   (exp (value (first nexp)) (value (first (rest (rest nexp)))))))
+
+
+(defn pf-1st-sub-exp
+  "returns the first sub expression for prefix (pf) notation
+   arithmetic expressions"
+  [aexp]
+  (first (rest aexp)))
+
+(defn pf-2nd-sub-exp
+  "returns the second sub expression for prefix (pf) notation
+   arithmetic expressions"
+  [aexp]
+  (first (rest (rest aexp))))
+
+(defn pf-operator
+  "returns the operator expression for prefix (pf) notation
+   arithmetic expressions"  
+  [aexp]
+  (first aexp))
+
+(defn pf-value
+  "pre-fix arithmetic expression evaluator:
+   (+ (* 1 1) 1) results in 2"
+  [nexp]
+  (cond
+   (atom? nexp) nexp
    
-   ))
+   (= (pf-operator nexp) '+)
+   (+ (pf-value (pf-1st-sub-exp nexp))
+      (pf-value (pf-2nd-sub-exp nexp)))
+
+   (= (pf-operator nexp) '*)
+   (* (pf-value (pf-1st-sub-exp nexp))
+      (pf-value (pf-2nd-sub-exp nexp)))
+   
+   (= (pf-operator nexp) 'exp)
+   (exp (pf-value (pf-1st-sub-exp nexp))
+        (pf-value (pf-2nd-sub-exp nexp)))))
+
+(defn sero?
+  "Version of zero? to do math with empty lists"
+  [nl]
+  (empty? nl))
+
+(defn edd1
+  "Version of inc (add1) to do math with empty lists"
+  [nl]
+  (cons '() nl))
+
+(defn zub1
+  "Version of dec (sub1) to do math with empty lists"
+  [nl]
+  (rest nl))
+
+(defn nl+
+  "addition of two \"nl\" empty list expressions to do math
+   with empty lists"
+  [nl ml]
+  (if (sero? ml)
+    nl
+    (edd1 (nl+ nl (zub1 ml)))))
+
+(defn nl-lat?
+  "A lat? method for lists-of-empty lists for doing the math
+   on empty lists at the end of Ch. 6"
+  [l]
+  (cond
+   (not (list? l)) false
+   (empty? l) true
+   :else (and (nl-lat? (first l)) (nl-lat? (rest l)))))
+
+;; this is the book version of nl-lat and it is severely broken
+;; unless you redefine an atom? (nl-atom?), which I did informally
+;; in my version above
+;; (defn nl-lat?
+;;   ""
+;;   [l]
+;;   (cond
+;;    (empty? l) true
+;;    (atom? (first l)) (nl-lat? (rest l))
+;;    :else false))
+
+(defn strict-nl-lat?
+  "My strict version of nl-lat? that doesn't allow empty lists
+   within the empty lists - the 'primitive unit' is () and cannot
+   have more empty lists in it.  The Book version of nl-lat? fails
+   this test."
+  [l]
+  (cond
+   (not (list? l)) false
+   (empty? l) true
+   (or (not (list? (first l))) (not (empty? (first l)))) false
+   :else (strict-nl-lat? (rest l))))
+
+
+
+;; ------------------- ;;
+;; ---[ Chapter 7 ]--- ;;
+;; ------------------- ;;
+
