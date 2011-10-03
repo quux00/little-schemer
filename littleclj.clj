@@ -2,19 +2,19 @@
   (:use clojure.core))
 
 ;; ------------------- ;;
-;; ---[ Chapter 1 ]--- ;; 
+;; ---[ Chapter 1 ]--- ;;
 ;; ------------------- ;;
 (defn atom?                       ; Ch.1, p.10
-  "Predicate test for whether an entity is atom,
+  "Predicate test for whether an entity is atom
    where atom is defined as not a list (not (list? x))
    using the Clojure built-in list? predicate"
   [x] (not (list? x)))
 
 ;; ------------------- ;;
-;; ---[ Chapter 2 ]--- ;; 
+;; ---[ Chapter 2 ]--- ;;
 ;; ------------------- ;;
 (defn lat?                        ; Ch.2, p.16
-  "Predicate test for whether an entity is a \"list-of-atoms\",
+  "Predicate test for whether an entity is a \"list-of-atoms\"
    where atom is defined as not a list (not (list? x))
    using the Clojure built-in list? predicate."
   [l]
@@ -25,7 +25,7 @@
       (lat? (rest l)))))
 
 (defn member?                     ; Ch.2, p.22
-  "Predicate test for whether an entity is a member of a \"lat\",
+  "Predicate test for whether an entity is a member of a \"lat\"
    where lat = \"list-of-atoms\".  See atom? and lat? doc."
   [a lat]
   (if (empty? lat)
@@ -33,7 +33,7 @@
     (or (= a (first lat)) (member? a (rest lat)))))
 
 ;; ------------------- ;;
-;; ---[ Chapter 3 ]--- ;; 
+;; ---[ Chapter 3 ]--- ;;
 ;; ------------------- ;;
 
 ;; this version returns lat when lat is empty, so
@@ -54,7 +54,7 @@
 
 ;; this is the improved if/elsif/else version from the book
 (defn rember                    ; Ch.3, p.41
-  "Remove a member of a lat, where lat = \"list-of-atoms\".  
+  "Remove a member of a lat, where lat = \"list-of-atoms\".
    See atom? and lat? doc.  It removes the first occurance
    of +a+ from lat. Use multirember to remove all occurances."
   [a lat]
@@ -112,7 +112,7 @@
 (defn subst2                     ; Ch.3, p.52
   "Returns a new list with the first occurence of either +o1+
   or +o2+, whichever occurs first, replaced with +new+ in the list
-  +lat+.  Returns +lat+ if it is empty or neither +o1+ nor +o2+ 
+  +lat+.  Returns +lat+ if it is empty or neither +o1+ nor +o2+
   can be found."
   [new o1 o2 lat]
   (cond
@@ -126,7 +126,7 @@
   "version of rember (see its doc) that removes all elements
    in a list that match  +a+, rather than just the first one"
   [a lat]
-  (cond 
+  (cond
    (empty? lat) lat
    (= a (first lat)) (multirember a (rest lat))
    :else (cons (first lat) (multirember a (rest lat)))))
@@ -163,13 +163,13 @@
 
 
 ;; ------------------- ;;
-;; ---[ Chapter 4 ]--- ;; 
+;; ---[ Chapter 4 ]--- ;;
 ;; ------------------- ;;
 
 (defn o+                        ; Ch.4, p.60
   "Arithmetic plus operator. Requires two and only two args"
   [n m]
-  (if (zero? m) 
+  (if (zero? m)
     n
     (inc (o+ n (dec m)))))
 
@@ -177,7 +177,7 @@
 (defn o2+                       ; Ch.4, p.60
   "Arithmetic plus operator. Requires two and only two args"
   [n m]
-  (if (zero? m) 
+  (if (zero? m)
     n
     (o+ (inc n) (dec m))))
 
@@ -192,7 +192,7 @@
   "Add all numbers in a tuple (defined to be a list of numbers)
    and return the result"
   [tup]
-  (if (empty? tup) 
+  (if (empty? tup)
     0
     (o+ (first tup) (addtup (rest tup)))))
 
@@ -213,7 +213,7 @@
   (if (and (empty? tup1) (empty? tup2))
     '()
     (cons (o+ (first tup1) (first tup2)) (tup+-orig (rest tup1) (rest tup2)))))
-          
+
 (defn tup+                      ; Ch.4, p.71
   "Adds each \"column\" of two tuples (list of numbers) together
    returning a new list with the sum of each column of the original
@@ -246,7 +246,7 @@
 
 
 (defn o=
-  "Returns true if two non-negative numbers passed in are equal,
+  "Returns true if two non-negative numbers passed in are equal
    false otherwise"
   [n m]
   (cond
@@ -289,7 +289,7 @@
    Returns nil if +n+ is larger than the size of +lat+ or +lat+ is empty.
    +n+ must be greater than 0"
   [n lat]
-  (if (= n 1) 
+  (if (= n 1)
     (first lat)
     (pick (dec n) (rest lat))))
 
@@ -298,7 +298,7 @@
    +lat+ returning a new list with that element removed. See also
    pick func notes."
   [n lat]
-  (cond 
+  (cond
    (empty? lat) lat
    (= n 1) (rest lat)
    :else (cons (first lat) (rempick (dec n) (rest lat)))))
@@ -343,7 +343,7 @@
 
 
 ;; ------------------- ;;
-;; ---[ Chapter 5 ]--- ;; 
+;; ---[ Chapter 5 ]--- ;;
 ;; ------------------- ;;
 
 (defn rember*
@@ -360,11 +360,11 @@
       (cons (rember* a (first l)) (rember* a (rest l))))))
 
 (defn insertR*
-  "A version of insertR (insert +new+ to the right of +old+) that 
-   that will insert after all occurences of +a+ in +l+, no matter 
+  "A version of insertR (insert +new+ to the right of +old+) that
+   that will insert after all occurences of +a+ in +l+, no matter
    how deeply nested in inner lists it is. Returns the new list."
   [new old l]
-  (if (empty? l) 
+  (if (empty? l)
     l
     (if (atom? (first l))
       (if (= old (first l))
@@ -372,8 +372,24 @@
         (cons (first l) (insertR* new old (rest l))))
       (cons (insertR* new old (first l)) (insertR* new old (rest l))))))
 
+(defn insertL*
+  "A version of insertL (insert +new+ to the left of +old+) that
+   that will insert before all occurences of +a+ in +l+, no matter
+   how deeply nested in inner lists it is. Returns the new list."
+  [new old l]
+  (if (empty? l)
+    l
+    (if (atom? (first l))
+      (if (= old (first l))
+        (cons new (cons old (insertL* new old (rest l))))
+        (cons (first l) (insertL* new old (rest l))))
+      (cons (insertL* new old (first l)) (insertL* new old (rest l))))))
+
 
 (defn occur*
+  "Counts and return the number of times the atom +a+ occurs in
+   the list +l+, regardless of how deeply nested in sub-lists
+   it is."
   [a l]
   (if (empty? l)
     0
@@ -382,3 +398,86 @@
         (inc (occur* a (rest l)))
         (occur* a (rest l)))
       (+ (occur* a (first l)) (occur* a (rest l))))))
+
+
+(defn subst*
+  "Version of subst that substitutes +new+ for +old+ no matter
+   how deeply nested +old+ is in lists and sublists of list +l+.
+   Returns the new list."
+  [new old l]
+  (if (empty? l)
+    l
+    (if (atom? (first l))
+      (if (= old (first l))
+        (cons new (subst* new old (rest l)))
+        (cons (first l) (subst* new old (rest l))))
+      (cons (subst* new old (first l)) (subst* new old (rest l))))))
+
+
+;; NOTE: I modified the name to have a '?' - not in the Little
+;; Schemer version for some reason (maybe Scheme doesn't allow
+;; two non-alpha chars in a function name
+(defn member?*
+  "Predicate test for whether an entity is a member of a list +l+.
+   Looks for +a+ anywhere in the list including sublists"
+  [a l]
+  (if (empty? l)
+    false
+    (if (atom? (first l))
+      (or (= a (first l)) (member?* a (rest l)))
+      (or (member?* a (first l)) (member?* a (rest l))))))
+
+(defn leftmost*
+  "Returns the leftmost atom (element) of a list. It will recurse
+   down into a sublist if that is the first S-expression in the list
+   +l+.  If that initial sublist or +l+ is empty, it will return nil."
+  [l]
+  (if (empty? l)
+    nil
+    (if (atom? (first l))
+      (first l)
+      (leftmost* (first l)))))
+
+;; this is my version, which differs (and I think is more
+;; elegant) than the book's version on p. 92
+;; I did not define a separate equal? function as they
+;; document bcs both equal? and eqlist? are dependent on
+;; the other, which seems bad circular design to me.
+;; In additon, in Clojure we don't need to define a general
+;; equal? method to handle any S-expression since Clojure's
+;; built-in = function already handles that - see my rember
+;; implementation to demonstrate that.  My Clojure version
+;; rember exactly matches the version on p. 95 using Clojure's
+;; = functional instead of a self-defined equal? function.
+(defn eqlist?
+  "Compares two lists. If the two lists have exact value equivalence
+   it returns true, otherwise false."
+  [l1 l2]
+  (cond
+   (and (empty? l1) (empty? l2)) true
+
+   (and (atom? (first l1)) (atom? (first l2)))
+   (if (not (= (first l1) (first l2)))
+     false
+     (eqlist? (rest l1) (rest l2)))
+
+   (and (list? (first l1)) (list? (first l2)))
+   (if (not (eqlist? (first l1) (first l2)))
+     false
+     (eqlist? (rest l1) (rest l2)))
+
+   :else false))
+
+;; ------------------- ;;
+;; ---[ Chapter 6 ]--- ;;
+;; ------------------- ;;
+
+(defn numbered?
+  ""
+  [aexp]
+  (cond
+   (atom? aexp) (number? aexp)
+   (and (number? (first aexp)
+   (or (number? aexp) (= aexp *) (= aexp +) (= aexp :exp))
+   
+   ))

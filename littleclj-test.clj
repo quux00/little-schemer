@@ -2,23 +2,46 @@
   (:use clojure.core))
 
 (def fail-tok "\n>>>>> FAIL: ")
-(defn header-str [func-name] (str "======= " func-name " tests ======="))
+(def nfails   (ref 0))
+(def nasserts (ref 0))
 
-;; ---[ assert functions ]--- ;;
+(defn header-str [func-name] 
+  (str "======= " func-name " tests ======="))
+
+;; -------------------------- ;;
+;; ---[ ASSERT FUNCTIONS ]--- ;;
+;; -------------------------- ;;
+
+;; (defn assert-gen [exp act fpass ffail]
+;;   (if (= exp act)
+;;     (fpass)
+;;     (ffail)
+
 (defn assert-true [bool msg]
-  (if bool
-    (print ".")
-    (println (str fail-tok msg))))
+  (dosync 
+   (ref-set nasserts (inc @nasserts))
+   (if bool
+     (print ".")
+     (do
+       (println (str fail-tok msg))
+       (ref-set nfails (inc @nfails))))))
 
 (defn assert-false [bool msg]
   (assert-true (not bool) msg))
 
 (defn assert-eq [exp act msg]
-  (if (= exp act)
-    (print ".")
-    (println (str fail-tok msg "; exp = " exp "; act = " act))))
+  (dosync 
+   (ref-set nasserts (inc @nasserts))
+   (if (= exp act)
+     (print ".")
+     (do 
+       (println (str fail-tok msg "; exp = " exp "; act = " act))
+       (ref-set nfails (inc @nfails))))))
+   
+;; --------------------- ;;
+;; ---[ START TESTS ]--- ;;
+;; --------------------- ;;
 
-;; ---[ tests ]--- ;;
 (def start-time (System/currentTimeMillis))
 
 (println (header-str "atom?"))
@@ -54,21 +77,25 @@
 
 
 (println (str "\n" (header-str "rember")))
-(assert-eq '(:a) (rember1 :ab '(:a :ab)) "1")
+(assert-eq '(:a) (rember1     :ab '(:a :ab)) "1")
 (assert-eq '(:a) (rember1-alt :ab '(:a :ab)) "1-alt")
-(assert-eq '(:a) (rember :ab '(:a :ab)) "1-2")
+(assert-eq '(:a) (rember      :ab '(:a :ab)) "1-2")
 
-(assert-eq '() (rember1 :ab '()) "2")
+(assert-eq '() (rember1     :ab '()) "2")
 (assert-eq nil (rember1-alt :ab '()) "2-alt")
-(assert-eq '() (rember :ab '()) "2-2")
+(assert-eq '() (rember      :ab '()) "2-2")
 
-(assert-eq '(:a :ab :c) (rember1 :x '(:a :ab :c)) "3")
+(assert-eq '(:a :ab :c) (rember1     :x '(:a :ab :c)) "3")
 (assert-eq '(:a :ab :c) (rember1-alt :x '(:a :ab :c)) "3-alt")
-(assert-eq '(:a :ab :c) (rember :x '(:a :ab :c)) "3-2")
+(assert-eq '(:a :ab :c) (rember      :x '(:a :ab :c)) "3-2")
 
-(assert-eq '(:a :c :ab) (rember1 :ab '(:a :ab :c :ab)) "4")
+(assert-eq '(:a :c :ab) (rember1     :ab '(:a :ab :c :ab)) "4")
 (assert-eq '(:a :c :ab) (rember1-alt :ab '(:a :ab :c :ab)) "4-alt")
-(assert-eq '(:a :c :ab) (rember :ab '(:a :ab :c :ab)) "4-2")
+(assert-eq '(:a :c :ab) (rember      :ab '(:a :ab :c :ab)) "4-2")
+
+(assert-eq '(:a :c :ab) (rember1     '(:ab) '(:a (:ab) :c :ab)) "5")
+(assert-eq '(:a :c :ab) (rember1-alt '(:ab) '(:a (:ab) :c :ab)) "5")
+(assert-eq '(:a :c :ab) (rember      '(:ab) '(:a (:ab) :c :ab)) "5-2")
 
 
 (println (str "\n" (header-str "firsts")))
@@ -393,6 +420,21 @@
 (assert-eq '( :a 1 (:a 1) (1 :a 1 2) :a 1 ((:c (:a 1))) )
            (insertR* 1 :a '( :a (:a) (1 :a 2) :a ((:c (:a))) ) ) "8")
 
+(println (str "\n" (header-str "insertL*")))
+(assert-eq '()            (insertL* 1 :a '())         "1")
+(assert-eq '(1 :a)        (insertL* 1 :a '(:a))       "2")
+(assert-eq '(:b)          (insertL* 1 :a '(:b))       "3")
+(assert-eq '(:b :c :d)    (insertL* 1 :a '(:b :c :d)) "4")
+(assert-eq '(:b :c 1 :a :d 1 :a 1 :a :d) 
+           (insertL* 1 :a '(:b :c :a :d :a :a :d))    "5")
+(assert-eq '((1 :a :b) (1 2))  
+           (insertL* 1 :a '( (:a :b) (1 2)) )         "6")
+(assert-eq '((1 :a :b) (1 1 :a 2) 1 :a)
+            (insertL* 1 :a '( (:a :b) (1 :a 2) :a) )  "7")
+(assert-eq '( 1 :a (1 :a) (1 1 :a 2) 1 :a ((:c (1 :a))) )
+           (insertL* 1 :a '( :a (:a) (1 :a 2) :a ((:c (:a))) ) ) "8")
+
+
 (println (str "\n" (header-str "occur*")))
 (assert-eq 0  (occur* 1 '())                              "1")
 (assert-eq 1  (occur* :a '(:a))                           "2")
@@ -401,9 +443,88 @@
 (assert-eq 3  (occur* :a '((:a :a) (1 :a) (:x)))          "5")
 (assert-eq 3  (occur* :a '((:a ((:a :b) 1)) (1 :a) (:x))) "6")
 
+(println (str "\n" (header-str "subst*")))
+(assert-eq '()            (subst* 1 :a '())         "1")
+(assert-eq '(1)           (subst* 1 :a '(:a))       "2")
+(assert-eq '(:b)          (subst* 1 :a '(:b))       "3")
+(assert-eq '(:b :c :d)    (subst* 1 :a '(:b :c :d)) "4")
+(assert-eq '(:b :c 1 :d 1 1 :d) 
+           (subst* 1 :a '(:b :c :a :d :a :a :d))    "5")
+(assert-eq '((1 :b) (1 2))  
+           (subst* 1 :a '( (:a :b) (1 2)) )         "6")
+(assert-eq '((1 :b) (1 1 2) 1)
+           (subst* 1 :a '( (:a :b) (1 :a 2) :a) )  "7")
+(assert-eq '( 1 (1) (1 1 2) 1 ((:c (1))) )
+           (subst* 1 :a '( :a (:a) (1 :a 2) :a ((:c (:a))) ) ) "8")
 
-;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+(println (str "\n" (header-str "member?*")))
+(assert-true  (member?* 1 '(1)) "1")
+(assert-true  (member?* 1 '(1 2 3 4)) "2")
+(assert-true  (member?* 3 '(1 2 3 4)) "3")
+(assert-true  (member?* 3 '(1 2 3 4 3)) "4")
+(assert-false (member?* 33 '(1 2 3 4 3)) "5")
+(assert-false (member?* 1 '()) "6")
+(assert-true  (member?* 1 '((1) (2))) "7")
+(assert-true  (member?* 1 '((1 2 3))) "8")
+(assert-true  (member?* 1 '((1) 2 1)) "9")
+(assert-true  (member?* :a '(1 2 3 :a 4)) "10")
+(assert-true  (member?* 1 '((1) 2 1)) "11")
+(assert-true  (member?* 1 '((((:x 1)) 2 3) (:a :b :c))) "12")
+
+
+(println (str "\n" (header-str "leftmost*")))
+(assert-eq nil (leftmost* '())                "1")
+(assert-eq nil (leftmost* '( () 1 2 3) )      "2")
+(assert-eq 1   (leftmost* '( 1 2 3 () ))      "3")
+(assert-eq 1   (leftmost* '( ((1)) (2 3) 4 )) "4")
+
+
+(println (str "\n" (header-str "eqlist?")))
+(assert-true  (eqlist? '() 
+                       '()) "1")
+(assert-true  (eqlist? '(1) 
+                       '(1)) "2")
+(assert-true  (eqlist? '(1 2 :a) 
+                       '(1 2 :a)) "3")
+(assert-false (eqlist? '(1) 
+                       '(1 :a)) "4")
+(assert-false (eqlist? '(1 2 :a) 
+                       '(2 1 :a)) "5")
+(assert-false (eqlist? '(1 2 :a)
+                       '(1 2 (:a))) "6")
+(assert-true  (eqlist? '(1 2 ((:a)))
+                       '(1 2 ((:a)))) "7")
+(assert-false (eqlist? '(1 2 ((:a)))
+                       '(1 2 ((:b)))) "8")
+(assert-true  (eqlist? '(1 (2 ((:a))) :b (:c :d) (:e (11))) 
+                       '(1 (2 ((:a))) :b (:c :d) (:e (11)))) "9")
+(assert-false (eqlist? '(1 (2 ((:a))) :b (:c :d) (:e (11))) 
+                       '(1 (2 ((:a))) :b (:c :d) (:e (12)))) "10")
+(assert-false (eqlist? '(1 (2 ((:a))) :b (:c :d) (:e (11))) 
+                       '(1 (2 ((:a))) :b (:c :d) ((:e) (11)))) "11")
+(assert-false (eqlist? '() '(1 2 3)) "12")
+(assert-false (eqlist? '(()) '((1 2 3))) "13")
+(assert-false (eqlist? '((1 (2) 3)) '((1 2 3))) "14")
+
+
+(println (str "\n" (header-str "numbered?")))
+(assert-true (numbered? 3) "1")
+(assert-true (numbered? *) "2")
+(assert-true (numbered? +) "3")
+(assert-true (numbered? :exp) "4")
+(assert-false (numbered? '()) "5")
+(assert-true (numbered? '(1 + 3)) "6")
+
+
+;; ------------------- ;;
+;; ---[ END TESTS ]--- ;;
+;; ------------------- ;;
 (def end-time (System/currentTimeMillis))
 
-(println (str "\nTime: " (- end-time start-time) " milliseconds"))
+(println "")
+(println (str "Number of asserts : " @nasserts))
+(println (str "Number of failures: " @nfails))
+(println (str "Time: " (- end-time start-time) " milliseconds"))
 :DONE
