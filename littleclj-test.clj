@@ -53,26 +53,26 @@
 
 
 (println (str "\n" (header-str "lat?")))
-(assert-true  (lat? '(1)) "1")
+(assert-true  (lat? '(1))       "1")
 (assert-true  (lat? '(1 2 3 5)) "2")
-(assert-true  (lat? '(1 :2)) "3")
-(assert-false (lat? '(1 (1))) "4")
-(assert-false (lat? '((1))) "5")
-(assert-false (lat? '(())) "6")
+(assert-true  (lat? '(1 :2))    "3")
+(assert-false (lat? '(1 (1)))   "4")
+(assert-false (lat? '((1)))     "5")
+(assert-false (lat? '(()))      "6")
 
 
 (println (str "\n" (header-str "member?")))
-(assert-true  (member? 1 '(1)) "1")
-(assert-true  (member? 1 '(1 2 3 4)) "2")
-(assert-true  (member? 3 '(1 2 3 4)) "3")
-(assert-true  (member? 3 '(1 2 3 4 3)) "4")
-(assert-false (member? 33 '(1 2 3 4 3)) "5")
-(assert-false (member? 1 '()) "6")
-(assert-false (member? 1 '((1) (2))) "7")
-(assert-false (member? 1 '((1 2 3))) "8")
-(assert-true  (member? 1 '((1) 2 1)) "9")
+(assert-true  (member? 1 '(1))           "1")
+(assert-true  (member? 1 '(1 2 3 4))     "2")
+(assert-true  (member? 3 '(1 2 3 4))     "3")
+(assert-true  (member? 3 '(1 2 3 4 3))   "4")
+(assert-false (member? 33 '(1 2 3 4 3))  "5")
+(assert-false (member? 1 '())            "6")
+(assert-false (member? 1 '((1) (2)))     "7")
+(assert-false (member? 1 '((1 2 3)))     "8")
+(assert-true  (member? 1 '((1) 2 1))     "9")
 (assert-true  (member? :a '(1 2 3 :a 4)) "10")
-(assert-true  (member? '(1) '((1) 2 1)) "11")
+(assert-true  (member? '(1) '((1) 2 1))  "11")
 (assert-true  (member? '(:a :b :c) '((1 2 3) (:a :b :c))) "12")
 
 
@@ -136,12 +136,12 @@
 
 
 (println (str "\n" (header-str "subst")))
-(assert-eq '(1 2 666 4 :5) (subst 666 3 '(1 2 3 4 :5)) "1")
-(assert-eq '(666 2 3 4 :5) (subst 666 1 '(1 2 3 4 :5)) "2")
-(assert-eq '(1 2 3 4 666) (subst 666 :5 '(1 2 3 4 :5)) "3")
-(assert-eq '(1 2 3 4 :5) (subst 666 :NA '(1 2 3 4 :5)) "4")
-(assert-eq '() (subst :new :old '()) "5")
-(assert-eq '(1 2) (subst :new nil '(1 2)) "6")
+(assert-eq '(1 2 666 4 :5) (subst 666 3 '(1 2 3 4 :5))   "1")
+(assert-eq '(666 2 3 4 :5) (subst 666 1 '(1 2 3 4 :5))   "2")
+(assert-eq '(1 2 3 4 666)  (subst 666 :5 '(1 2 3 4 :5))  "3")
+(assert-eq '(1 2 3 4 :5)   (subst 666 :NA '(1 2 3 4 :5)) "4")
+(assert-eq '()             (subst :new :old '())         "5")
+(assert-eq '(1 2)          (subst :new nil '(1 2))       "6")
 ;; this one returns the original list, bcs it is not a lat
 ;; technical subst doesn't have to work on lat's, but that's
 ;; how the Little Schemer has it, so I'm following it
@@ -150,13 +150,13 @@
            "7")
 
 (println (str "\n" (header-str "subst2")))
-(assert-eq '(1 2 666 4 :5) (subst2 666 3 4 '(1 2 3 4 :5)) "1")
-(assert-eq '(666 2 3 4 :5) (subst2 666 1 4 '(1 2 3 4 :5)) "2")
-(assert-eq '(666 1 2 3 4 :5) (subst2 666 1 4 '(4 1 2 3 4 :5)) "3")
-(assert-eq '(1 2 3 4 666) (subst2 666 :4 :5 '(1 2 3 4 :5)) "4")
-(assert-eq '(1 2 3 4 :5) (subst2 666 :NA :NA2 '(1 2 3 4 :5)) "5")
-(assert-eq '() (subst2 :new :o1 :o2 '()) "6")
-(assert-eq '(1 2) (subst2 :new nil nil '(1 2)) "7")
+(assert-eq '(1 2 666 4 :5)   (subst2 666 3 4 '(1 2 3 4 :5))      "1")
+(assert-eq '(666 2 3 4 :5)   (subst2 666 1 4 '(1 2 3 4 :5))      "2")
+(assert-eq '(666 1 2 3 4 :5) (subst2 666 1 4 '(4 1 2 3 4 :5))    "3")
+(assert-eq '(1 2 3 4 666)    (subst2 666 :4 :5 '(1 2 3 4 :5))    "4")
+(assert-eq '(1 2 3 4 :5)     (subst2 666 :NA :NA2 '(1 2 3 4 :5)) "5")
+(assert-eq '()               (subst2 :new :o1 :o2 '())           "6")
+(assert-eq '(1 2)            (subst2 :new nil nil '(1 2))        "7")
 ;; this one returns the original list, bcs it is not a lat
 ;; technical subst2 doesn't have to work on lat's, but that's
 ;; how the Little Schemer has it, so I'm following it
@@ -166,15 +166,15 @@
 
 
 (println (str "\n" (header-str "multirember")))
-(assert-eq '(:a)        (multirember :ab '(:a :ab)) "1")
-(assert-eq '()          (multirember :ab '()) "2")
-(assert-eq '(:a :ab :c) (multirember :x '(:a :ab :c)) "3")
-(assert-eq '(:a :c)     (multirember :ab '(:a :ab :c)) "4")
-(assert-eq '(:a :c)     (multirember :ab '(:a :ab :c :ab)) "5")
-(assert-eq '(:a :c)     (multirember :ab '(:a :ab :ab :c)) "6")
+(assert-eq '(:a)        (multirember :ab '(:a :ab))                "1")
+(assert-eq '()          (multirember :ab '())                      "2")
+(assert-eq '(:a :ab :c) (multirember :x '(:a :ab :c))              "3")
+(assert-eq '(:a :c)     (multirember :ab '(:a :ab :c))             "4")
+(assert-eq '(:a :c)     (multirember :ab '(:a :ab :c :ab))         "5")
+(assert-eq '(:a :c)     (multirember :ab '(:a :ab :ab :c))         "6")
 (assert-eq '(:a :c)     (multirember :ab '(:ab :a :ab :c :ab :ab)) "7")
-(assert-eq '(:x) (multirember :ab '(:ab :ab :ab :x)) "8")
-(assert-eq '() (multirember :ab '(:ab :ab :ab)) "9")
+(assert-eq '(:x)        (multirember :ab '(:ab :ab :ab :x))        "8")
+(assert-eq '()          (multirember :ab '(:ab :ab :ab))           "9")
 
 
 
@@ -636,6 +636,70 @@
 (assert-false (strict-nl-lat? '(() () (()))   ) "9")
 ;; test from p.109 of the book
 (assert-false (strict-nl-lat? '( (()) (()()) (()()()) )) "10")
+
+(println (str "\n" (header-str "isset?")))
+(assert-true  (isset? '()          ) "1")
+(assert-true  (isset? '(1)         ) "2")
+(assert-true  (isset? '(1 2 :a 11) ) "3")
+(assert-true  (isset? '(())        ) "4")
+(assert-true  (isset? '(() (1) (2))) "5")
+(assert-false (isset? '(1 2 :a 1)  ) "6")
+(assert-false (isset? '(2 2)       ) "7")
+(assert-false (isset? '(() (1) ()) ) "9")
+
+
+(println (str "\n" (header-str "makeset-1")))
+;;TODO: these tests are fragile to ordering of the
+;;      the list - change to use a is-same-set type of method
+(assert-eq '()      (makeset-1 '()               ) "1")
+(assert-eq '(:a)    (makeset-1 '(:a)             ) "2")
+(assert-eq '(:a :b) (makeset-1 '(:a :b)          ) "3")
+(assert-eq '(:b :a) (makeset-1 '(:a :b :a)       ) "4")
+(assert-eq '(:a :b) (makeset-1 '(:a :b :a :a :b) ) "5")
+(assert-eq '(1)     (makeset-1 '(1 1 1 1 1 1 1)  ) "6")
+(assert-eq '(:b 2 1 :c :d :a) 
+           (makeset-1 '(:a :b 1 :a :a :b 2 1 :c :c :d :a) ) "7")
+
+
+(println (str "\n" (header-str "makeset")))
+;;TODO: these tests are fragile to ordering of the
+;;      the list - change to use a is-same-set type of method
+(assert-eq '()      (makeset '()               ) "1")
+(assert-eq '(:a)    (makeset '(:a)             ) "2")
+(assert-eq '(:a :b) (makeset '(:a :b)          ) "3")
+(assert-eq '(:a :b) (makeset '(:a :b :a)       ) "4")
+(assert-eq '(:a :b) (makeset '(:a :b :a :a :b) ) "5")
+(assert-eq '(1)     (makeset '(1 1 1 1 1 1 1)  ) "6")
+(assert-eq '(:a :b 1 2 :c :d) 
+           (makeset '(:a :b 1 :a :a :b 2 1 :c :c :d :a) ) "7")
+
+
+(println (str "\n" (header-str "subset?")))
+(assert-true  (subset? '() '()                   ) "1")
+(assert-true  (subset? '() '(1)                  ) "2")
+(assert-true  (subset? '(1) '(1)                 ) "3")
+(assert-true  (subset? '(1) '(1 2)               ) "4")
+(assert-true  (subset? '(1 2) '(1 2)             ) "5")
+(assert-true  (subset? '(2 1) '(1 2)             ) "6")
+(assert-true  (subset? '(1 2 3) '(:b 3 :a 1 2)   ) "7")
+(assert-false (subset? '(1 2 4 3) '(:b 3 :a 1 2) ) "8")
+(assert-false (subset? '(1 2 3 4) '(:b 3 :a 1 2) ) "9")
+(assert-false (subset? '(:d) '(:b 3 :a 1 2)      ) "10")
+
+
+(println (str "\n" (header-str "eqset?")))
+(assert-true  (eqset? '() '()                         ) "1")
+(assert-true  (eqset? '(1) '(1)                       ) "2")
+(assert-true  (eqset? '(1 2) '(1 2)                   ) "3")
+(assert-true  (eqset? '(1 2) '(2 1)                   ) "4")
+(assert-true  (eqset? '(1 :a 2) '(:a 2 1)             ) "5")
+(assert-true  (eqset? '(1 :a 2 :b 33) '(33 :b :a 2 1) ) "6")
+(assert-false (eqset? '(1 :b 2) '(:a 2 1)             ) "7")
+(assert-false (eqset? '() '(:a 2 1)                   ) "8")
+(assert-false (eqset? '(:a 2 1) '()                   ) "9")
+(assert-false (eqset? '(:a 2 1) '(2 1)                ) "10")
+(assert-false (eqset? '(:a 2 1) '(:a)                 ) "11")
+
 
 ;; ------------------- ;;
 ;; ---[ END TESTS ]--- ;;

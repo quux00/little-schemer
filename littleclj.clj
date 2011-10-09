@@ -55,8 +55,8 @@
 ;; this is the improved if/elsif/else version from the book
 (defn rember                    ; Ch.3, p.41
   "Remove a member of a lat, where lat = \"list-of-atoms\".
-   See atom? and lat? doc.  It removes the first occurance
-   of +a+ from lat. Use multirember to remove all occurances."
+   See atom? and lat? doc.  It removes the first occurrence
+   of +a+ from lat. Use multirember to remove all occurrences."
   [a lat]
   (cond
    (empty? lat) lat
@@ -124,7 +124,7 @@
 
 (defn multirember                ; Ch.3, p.53
   "version of rember (see its doc) that removes all elements
-   in a list that match  +a+, rather than just the first one"
+   in a list that match +a+, rather than just the first one"
   [a lat]
   (cond
    (empty? lat) lat
@@ -639,3 +639,48 @@
 ;; ---[ Chapter 7 ]--- ;;
 ;; ------------------- ;;
 
+;; can't use set? since that is part of clojure.core
+;; so I renamed it isset?
+(defn isset?
+  "Predicate determining whether the list passed in is a set, 
+   where set is defined as a list that has no duplicate entries.
+   Returns true for the empty list."
+  [lat]
+  (cond
+   (empty? lat) true
+   (member? (first lat) (rest lat)) false
+   :else (isset? (rest lat))))
+
+
+(defn makeset-1
+  "makes a set from a list - it filters out any duplicates in the
+   list +lat+ and returns a new list"
+  [lat]
+  (cond 
+   (empty? lat) lat
+   (member? (first lat) (rest lat)) (makeset-1 (rest lat))
+   :else (cons (first lat) (makeset-1 (rest lat)))))
+
+(defn makeset
+  "makes a set from a list - it filters out any duplicates in the
+   list +lat+ and returns a new list"
+  [lat]
+  (if (empty? lat) 
+    lat
+    (cons (first lat) (makeset (multirember (first lat) (rest lat))))))
+
+
+(defn subset?
+  "Predicate that determins whether all members +set1+ are also in
+  +set2+. Returns true if set1 is the empty set."
+  [set1 set2]
+  (if (empty? set1) 
+    true
+    (and (member? (first set1) set2) (subset? (rest set1) set2))))
+
+(defn eqset?
+  ""
+  [set1 set2]
+  (and (subset? set1 set2) (subset? set2 set1)))
+
+;; left off p. 115 => intersect is next
