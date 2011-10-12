@@ -17,7 +17,9 @@
 ;;     (fpass)
 ;;     (ffail)
 
-(defn assert-true [bool msg]
+(defn assert-true 
+  "assert that the first argument is logical true, otherwise print +msg+"
+  [bool msg]
   (dosync 
    (ref-set nasserts (inc @nasserts))
    (if bool
@@ -26,10 +28,16 @@
        (println (str fail-tok msg))
        (ref-set nfails (inc @nfails))))))
 
-(defn assert-false [bool msg]
+(defn assert-false 
+  "assert that the first argument is logical false, 
+   otherwise print +msg+"
+  [bool msg]
   (assert-true (not bool) msg))
 
-(defn assert-eq [exp act msg]
+(defn assert-eq 
+  "Assert that +exp+ is exactly equal to +act+ using Clojure's
+   built-in = method, otherwise print +msg+"
+  [exp act msg]
   (dosync 
    (ref-set nasserts (inc @nasserts))
    (if (= exp act)
@@ -37,6 +45,21 @@
      (do 
        (println (str fail-tok msg "; exp = " exp "; act = " act))
        (ref-set nfails (inc @nfails))))))
+
+(defn assert-eqset
+  "Assert that +exp-set+ has the same members as +act-set+ using
+   the eqset? method defined in little.cljr library, otherwise 
+   print +msg+"
+  [exp-set act-set msg]
+  (dosync
+   (ref-set nasserts (inc @nasserts))
+   (if (eqset? exp-set act-set)
+     (print ".")
+     (do
+       (println (str fail-tok msg "; exp = " exp-set "; act = " act-set))
+       (ref-set nfails (inc @nfails))))))
+       
+   
    
 ;; --------------------- ;;
 ;; ---[ START TESTS ]--- ;;
@@ -460,17 +483,17 @@
 
 
 (println (str "\n" (header-str "member?*")))
-(assert-true  (member?* 1 '(1)) "1")
-(assert-true  (member?* 1 '(1 2 3 4)) "2")
-(assert-true  (member?* 3 '(1 2 3 4)) "3")
-(assert-true  (member?* 3 '(1 2 3 4 3)) "4")
-(assert-false (member?* 33 '(1 2 3 4 3)) "5")
-(assert-false (member?* 1 '()) "6")
-(assert-true  (member?* 1 '((1) (2))) "7")
-(assert-true  (member?* 1 '((1 2 3))) "8")
-(assert-true  (member?* 1 '((1) 2 1)) "9")
-(assert-true  (member?* :a '(1 2 3 :a 4)) "10")
-(assert-true  (member?* 1 '((1) 2 1)) "11")
+(assert-true  (member?* 1 '(1))                         "1")
+(assert-true  (member?* 1 '(1 2 3 4))                   "2")
+(assert-true  (member?* 3 '(1 2 3 4))                   "3")
+(assert-true  (member?* 3 '(1 2 3 4 3))                 "4")
+(assert-false (member?* 33 '(1 2 3 4 3))                "5")
+(assert-false (member?* 1 '())                          "6")
+(assert-true  (member?* 1 '((1) (2)))                   "7")
+(assert-true  (member?* 1 '((1 2 3)))                   "8")
+(assert-true  (member?* 1 '((1) 2 1))                   "9")
+(assert-true  (member?* :a '(1 2 3 :a 4))               "10")
+(assert-true  (member?* 1 '((1) 2 1))                   "11")
 (assert-true  (member?* 1 '((((:x 1)) 2 3) (:a :b :c))) "12")
 
 
@@ -649,29 +672,25 @@
 
 
 (println (str "\n" (header-str "makeset-1")))
-;;TODO: these tests are fragile to ordering of the
-;;      the list - change to use a is-same-set type of method
-(assert-eq '()      (makeset-1 '()               ) "1")
-(assert-eq '(:a)    (makeset-1 '(:a)             ) "2")
-(assert-eq '(:a :b) (makeset-1 '(:a :b)          ) "3")
-(assert-eq '(:b :a) (makeset-1 '(:a :b :a)       ) "4")
-(assert-eq '(:a :b) (makeset-1 '(:a :b :a :a :b) ) "5")
-(assert-eq '(1)     (makeset-1 '(1 1 1 1 1 1 1)  ) "6")
-(assert-eq '(:b 2 1 :c :d :a) 
+(assert-eqset '()      (makeset-1 '()               ) "1")
+(assert-eqset '(:a)    (makeset-1 '(:a)             ) "2")
+(assert-eqset '(:a :b) (makeset-1 '(:a :b)          ) "3")
+(assert-eqset '(:b :a) (makeset-1 '(:a :b :a)       ) "4")
+(assert-eqset '(:a :b) (makeset-1 '(:a :b :a :a :b) ) "5")
+(assert-eqset '(1)     (makeset-1 '(1 1 1 1 1 1 1)  ) "6")
+(assert-eqset '(:b 2 1 :c :d :a) 
            (makeset-1 '(:a :b 1 :a :a :b 2 1 :c :c :d :a) ) "7")
 
 
 (println (str "\n" (header-str "makeset")))
-;;TODO: these tests are fragile to ordering of the
-;;      the list - change to use a is-same-set type of method
-(assert-eq '()      (makeset '()               ) "1")
-(assert-eq '(:a)    (makeset '(:a)             ) "2")
-(assert-eq '(:a :b) (makeset '(:a :b)          ) "3")
-(assert-eq '(:a :b) (makeset '(:a :b :a)       ) "4")
-(assert-eq '(:a :b) (makeset '(:a :b :a :a :b) ) "5")
-(assert-eq '(1)     (makeset '(1 1 1 1 1 1 1)  ) "6")
-(assert-eq '(:a :b 1 2 :c :d) 
-           (makeset '(:a :b 1 :a :a :b 2 1 :c :c :d :a) ) "7")
+(assert-eqset '()      (makeset '()               ) "1")
+(assert-eqset '(:a)    (makeset '(:a)             ) "2")
+(assert-eqset '(:a :b) (makeset '(:a :b)          ) "3")
+(assert-eqset '(:a :b) (makeset '(:a :b :a)       ) "4")
+(assert-eqset '(:a :b) (makeset '(:a :b :a :a :b) ) "5")
+(assert-eqset '(1)     (makeset '(1 1 1 1 1 1 1)  ) "6")
+(assert-eqset '(:a :b :c :d 1 2) 
+              (makeset '(:a :b 1 :a :a :b 2 1 :c :c :d :a) ) "7")
 
 
 (println (str "\n" (header-str "subset?")))
@@ -699,6 +718,59 @@
 (assert-false (eqset? '(:a 2 1) '()                   ) "9")
 (assert-false (eqset? '(:a 2 1) '(2 1)                ) "10")
 (assert-false (eqset? '(:a 2 1) '(:a)                 ) "11")
+
+
+(println (str "\n" (header-str "intersect?")))
+(assert-false (intersect? '() '()              ) "1")
+(assert-true  (intersect? '(1) '(1)            ) "2")
+(assert-true  (intersect? '(1 2) '(3 2)        ) "3")
+(assert-true  (intersect? '(3 2) '(1 2 3)      ) "4")
+(assert-true  (intersect? '(1) '(3 2 4 :a 1)   ) "5")
+(assert-true  (intersect? '(3 2 4 :a 1) '(1)   ) "6")
+(assert-false (intersect? '(3 2 4 :a :b) '(1)  ) "7")
+(assert-false (intersect? '(1) '(3 2 4 :a :b)  ) "8")
+(assert-false (intersect? '(1) '()             ) "9")
+(assert-false (intersect? '() '(1)             ) "10")
+
+
+(println (str "\n" (header-str "intersect")))
+(assert-eqset '()        (intersect '() '()                        ) "1")
+(assert-eqset '(:a)      (intersect '(:a) '(:a)                    ) "2")
+(assert-eqset '(:b)      (intersect '(:a :b) '(:b :c)              ) "3")
+(assert-eqset '()        (intersect '(:a :b) '(1 :c)               ) "4")
+(assert-eqset '(:a :b 1) (intersect '(:a :b 1 :d :e) '(:b :c 1 :a) ) "5")
+(assert-eqset '(1 2)     (intersect '(:a 2 1) '(:b :c 1 2)         ) "6")
+(assert-eqset '(1 2)     (intersect '(:b :c 1 2) '(:a 2 1)         ) "7")
+(assert-eqset '()        (intersect '(:a 2 1) '(3)                 ) "8")
+(assert-eqset '()        (intersect '(3) '(:a 2 1)                 ) "9")
+;; to prove that this method will return dup entries if not
+;; passed pure (uniquified) sets
+(assert-eqset '(2 2)     (intersect '(2 2) '(:a 2 1)                 ) "9")
+
+
+(println (str "\n" (header-str "union")))
+(assert-eqset '()           (union '() '()                 ) "1")
+(assert-eqset '(:a)         (union '(:a) '(:a)             ) "2")
+(assert-eqset '(:a)         (union '()   '(:a)             ) "3")
+(assert-eqset '(:a)         (union '(:a) '()               ) "4")
+(assert-eqset '(:a :b :c)   (union '(:a :b) '(:b :c)       ) "5")
+(assert-eqset '(:a :b :c 1) (union '(:a :b) '(1 :c)        ) "6")
+(assert-eqset  '(:a :b :c :d :e 1 2 5)
+               (union '(:a :b 1 :d :e 5) '(:b :c 1 :a 2) ) "7")
+
+
+(println (str "\n" (header-str "set-diff")))
+(assert-eqset '()           (set-diff '() '()                ) "1")
+(assert-eqset '()         (set-diff '(:a) '(:a)              ) "2")
+(assert-eqset '()         (set-diff '()   '(:a)              ) "3")
+(assert-eqset '(:a)         (set-diff '(:a) '()              ) "4")
+(assert-eqset '(:a)   (set-diff '(:a :b) '(:b :c)            ) "5")
+(assert-eqset '(:a :b) (set-diff '(:a :b) '(1 :c)            ) "6")
+(assert-eqset '(1 :c) (set-diff '(1 :c) '(:a :b)             ) "7")
+(assert-eqset  '(:d :e 5)
+               (set-diff '(:a :b 1 :d :e 5) '(:b :c 1 :a 2)  ) "8")
+(assert-eqset  '(:c 2)
+               (set-diff  '(:b :c 1 :a 2) '(:a :b 1 :d :e 5) ) "9")
 
 
 ;; ------------------- ;;

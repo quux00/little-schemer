@@ -671,7 +671,7 @@
 
 
 (defn subset?
-  "Predicate that determins whether all members +set1+ are also in
+  "Predicate that determines whether all members +set1+ are also in
   +set2+. Returns true if set1 is the empty set."
   [set1 set2]
   (if (empty? set1) 
@@ -679,8 +679,51 @@
     (and (member? (first set1) set2) (subset? (rest set1) set2))))
 
 (defn eqset?
-  ""
+  "Predicate to determine whether the two sets contain the same entities
+   (regardless of order, since sets do not define an order)"
   [set1 set2]
   (and (subset? set1 set2) (subset? set2 set1)))
 
-;; left off p. 115 => intersect is next
+(defn intersect?
+  "Predicate to determine whether the two set intersect - have any
+   one entry in common.  Returns false if they do not (including
+   when one of the sets is empty)."
+  [set1 set2]
+  (if (empty? set1) 
+    false
+    (or (member? (first set1) set2) (intersect? (rest set1) set2))))
+  
+;; to make this an intersect that would work on lists (with possibly
+;; redundant entries, try writing it with multirember ...
+(defn intersect
+  "Calculates and returns the insersection of elements between the
+   two sets.  This assumes that the sets are sets (have unique values)
+   otherwise it may return duplicate entries."
+  [set1 set2]
+  (cond
+   (empty? set1) set1
+
+   (member? (first set1) set2) 
+   (cons (first set1) (intersect (rest set1) set2))
+
+   :else (intersect (rest set1) set2)))
+ 
+
+(defn union
+  "Calculates and returns the union of two sets (assumed to have
+   non-redundant entries)."
+  [set1 set2]
+  (cond
+   (empty? set1) set2
+   (member? (first set1) set2) (union (rest set1) set2)
+   :else (cons (first set1) (union (rest set1) set2))))
+
+
+(defn set-diff
+  "Returns a set (list) of all elements in +set1+ that are not
+   in +set2+"
+  [set1 set2]
+  (cond
+   (empty? set1) '()
+   (member? (first set1) set2) (set-diff (rest set1) set2)
+   :else (cons (first set1) (set-diff (rest set1) set2))))
