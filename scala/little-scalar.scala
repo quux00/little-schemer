@@ -77,10 +77,54 @@ trait LittleScalar {
   }
 
   /* ---[ Chapter 4 ]--- */
-  // def add(n: AnyVal, m: AnyVal): AnyVal
+  // TODO: not sure how to make this generic to all numeric types in Scala,
+  // since there isn't a single superclass for all numeric types (AnyVal is
+  // also a trait for Boolean and Unit, so doesn't have numeric operators
+  // def addNum[T](n: Numeric[T], m: Numeric[T]): Numeric[T] = {
+  //   if (m == 0) n
+  //   else 1 + (addNum(n, m-1))  //~TODO: this fails bcs Numeric does not have a "-" operator
+  // }
+  
   def add(n: Int, m: Int): Int = {
     if (m == 0) n
     else 1 + (add(n, m-1))
+  }
+
+  def subtract(n: Int, m: Int): Int = {
+    if (m == 0) n
+    else (-1) + (subtract(n, (m-1)))
+  }
+  
+  def addtup(tup: Seq[Int]): Int = {
+    if (tup.isEmpty) 0
+    else add(tup.head, addtup(tup.tail))
+  }
+
+  def mult(n: Int, m: Int): Int = {
+    if (m == 0 || n == 0) 0
+    else if (m == 1) n
+    else n + mult(n, (m-1))
+  }
+
+  def tup_+(tup1: Seq[Int], tup2: Seq[Int]): Seq[Int] = {
+    if      (tup1.isEmpty) tup2
+    else if (tup2.isEmpty) tup1
+    else (tup1.head + tup2.head) +: tup_+(tup1.tail, tup2.tail)
+  }
+
+  def exp(n: Int, m: Int): Int = {
+    if (m == 0) 1
+    else n * exp(n, (m-1))
+  }
+
+  def quotient(n: Int, m: Int): Int = {
+    if (n < m) 0
+    else 1 + quotient(n-m, m)
+  }
+
+  def length(lat: Seq[_]): Int = {
+    if (lat.isEmpty) 0
+    else 1 + length(lat.tail)
   }
 }
 
@@ -208,3 +252,40 @@ header("add")
 assertEq( 7, L.add(4,3), "1" )
 assertEq( 7, L.add(0,7), "2" )
 assertEq( 7, L.add(7,0), "3" )
+
+header("subtract")
+assertEq( 1, L.subtract(4,3),  "1")
+assertEq( 4, L.subtract(7,3),  "2")
+assertEq( 4, L.subtract(4,0),  "3")
+
+// tuple is defined as a list of number (Ints here)
+header("addtup")
+assertEq( 8, L.addtup(List(1,4,3)), "1" )
+assertEq( 7, L.addtup(List(0,7)), "2" )
+assertEq( 17, L.addtup(List(0,7,3,6,1)), "2" )
+assertEq( 1, L.addtup(List(1)), "2" )
+
+header("mult")
+assertEq( 12, L.mult(4,3),  "1")
+assertEq( 21, L.mult(7,3),  "2")
+assertEq( 0,  L.mult(4,0),  "3")
+
+header("tup_+")
+val tupl = List(1,2,3,4)
+assertEq( List(2,4,6,8), L.tup_+(tupl, tupl), "1")
+assertEq( List(2,4,6,4), L.tup_+(tupl, List(1,2,3)), "2")
+assertEq( List(2,4,6,4), L.tup_+(List(1,2,3), tupl), "3")
+assertEq( List(2,2,3,4), L.tup_+(List(1), tupl), "3")
+
+header("exp")
+assertEq( 16, L.exp(2,4),  "1")
+assertEq( 1, L.exp(1,3),  "2")
+assertEq( 1,  L.exp(4,0),  "3")
+assertEq( 256,  L.exp(2,8),  "4")
+
+header("quotient")
+assertEq( 2, L.quotient(4,2),  "1")
+assertEq( 3, L.quotient(3,1),  "2")
+assertEq( 2,  L.quotient(11,5),  "3")
+assertEq( 11,  L.quotient(82,7),  "4")
+
