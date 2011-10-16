@@ -438,8 +438,8 @@
       (first l)
       (leftmost* (first l)))))
 
-;; this is my version, which differs (and I think is more
-;; elegant) than the book's version on p. 92
+;; I have two versions of eqlist?, both of which differ (and
+;; I think are more elegant) than the book's version on p. 92
 ;; I did not define a separate equal? function as they
 ;; document bcs both equal? and eqlist? are dependent on
 ;; the other, which seems bad circular design to me.
@@ -449,7 +449,7 @@
 ;; implementation to demonstrate that.  My Clojure version
 ;; rember exactly matches the version on p. 95 using Clojure's
 ;; = functional instead of a self-defined equal? function.
-(defn eqlist?
+(defn eqlist2?
   "Compares two lists. If the two lists have exact value equivalence
    it returns true, otherwise false."
   [l1 l2]
@@ -467,6 +467,24 @@
      (eqlist? (rest l1) (rest l2)))
 
    :else false))
+
+(defn eqlist?
+  "Compares two lists. If the two lists have exact value equivalence
+   it returns true, otherwise false."
+  [l1 l2]
+  (cond
+   (or (empty? l1) (empty? l2)) (and (empty? l1) (empty? l2))
+
+   (or (atom? (first l1)) (atom? (first l2)))
+   (if (and (atom? (first l1)) (atom? (first l2)) 
+            (= (first l1) (first l2)))
+     (eqlist? (rest l1) (rest l2))
+     false)
+
+   :else (and (eqlist? (first l1) (first l2))
+              (eqlist? (rest l1) (rest l2)))))
+     
+
 
 ;; ------------------- ;;
 ;; ---[ Chapter 6 ]--- ;;
@@ -727,3 +745,28 @@
    (empty? set1) '()
    (member? (first set1) set2) (set-diff (rest set1) set2)
    :else (cons (first set1) (set-diff (rest set1) set2))))
+
+;; (defn intersect-all
+;;   ""
+;;   [l-set]
+;;   (cond
+;;    (empty? (first l-set)) (first l-set)
+
+;;    ;; maybe do this in terms of intersect, but have to figure
+;;    ;; out how to recurse through rest l-set ...
+
+;;    (and (member? (first (first l-set)) (???)) 
+;;         (member? (first (first l-set)) (???)))
+;;    (cons (first (first l-set)) (union (rest (first l-set)) (rest l-set)))
+
+;;    :else xxx))
+         
+
+(defn intersect-all
+  ""
+  [l-set]
+  (if (empty? l-set) 
+    l-set
+    (cons (intersect(first l-set) (first (rest l-set))) intersect-all (rest l-set))))
+
+;;(:a :b :c) (:d :a :b) (1 2 :a :d)

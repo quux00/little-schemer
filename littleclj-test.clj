@@ -745,7 +745,7 @@
 (assert-eqset '()        (intersect '(3) '(:a 2 1)                 ) "9")
 ;; to prove that this method will return dup entries if not
 ;; passed pure (uniquified) sets
-(assert-eqset '(2 2)     (intersect '(2 2) '(:a 2 1)                 ) "9")
+(assert-eqset '(2 2)     (intersect '(2 2) '(:a 2 1)               ) "10")
 
 
 (println (str "\n" (header-str "union")))
@@ -771,6 +771,12 @@
                (set-diff '(:a :b 1 :d :e 5) '(:b :c 1 :a 2)  ) "8")
 (assert-eqset  '(:c 2)
                (set-diff  '(:b :c 1 :a 2) '(:a :b 1 :d :e 5) ) "9")
+
+
+(println (str "\n" (header-str "intersect-all")))
+;; (assert-eqset '(2)     (intersect-all '((1 2) (2 3))             ) "1")
+;; (assert-eqset '(2)     (intersect-all '((1 2) (2 3) (3 2))      ) "2")
+;; (assert-eqset '(2 3)   (intersect-all '((1 2 3) (2 3 1) (1 3 :a)) ) "3")
 
 
 ;; ------------------- ;;
