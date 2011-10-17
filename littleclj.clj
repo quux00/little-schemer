@@ -459,12 +459,12 @@
    (and (atom? (first l1)) (atom? (first l2)))
    (if (not (= (first l1) (first l2)))
      false
-     (eqlist? (rest l1) (rest l2)))
+     (eqlist2? (rest l1) (rest l2)))
 
    (and (list? (first l1)) (list? (first l2)))
-   (if (not (eqlist? (first l1) (first l2)))
+   (if (not (eqlist2? (first l1) (first l2)))
      false
-     (eqlist? (rest l1) (rest l2)))
+     (eqlist2? (rest l1) (rest l2)))
 
    :else false))
 
@@ -494,11 +494,11 @@
   "Predicate function that checks whether a single number (not in a
    list) is passed in or an arithmetic expression with in-fix
    notation in a list, such as (3 * (4 + 1)).  My version allows
-   the four basic arithmetic operations but :exp for exponentiation.
-   Note that this method is flawed in that it assumes you lists
+   the four basic arithmetic operations but also :exp for exponentiation.
+   Note that this method is flawed in that it assumes your lists
    have an odd number of entries and in in-fix notation.
    For example: ((1 + 2) * 4 4) will return true, so this is NOT
-   a general purpose in fix arithmetic AST parser."
+   a general purpose in-fix arithmetic AST parser."
   [aexp]
   (cond 
    (atom? aexp) (number? aexp)
