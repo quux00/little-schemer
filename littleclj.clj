@@ -54,7 +54,7 @@
 
 ;; this is the improved if/elsif/else version from the book
 (defn rember                    ; Ch.3, p.41
-  "Remove a member of a lat, where lat = \"list-of-atoms\".
+  "Remove a member of a lat, where lat = 'list-of-atoms'.
    See atom? and lat? doc.  It removes the first occurrence
    of +a+ from lat. Use multirember to remove all occurrences."
   [a lat]
@@ -746,27 +746,191 @@
    (member? (first set1) set2) (set-diff (rest set1) set2)
    :else (cons (first set1) (set-diff (rest set1) set2))))
 
-;; (defn intersect-all
-;;   ""
-;;   [l-set]
-;;   (cond
-;;    (empty? (first l-set)) (first l-set)
-
-;;    ;; maybe do this in terms of intersect, but have to figure
-;;    ;; out how to recurse through rest l-set ...
-
-;;    (and (member? (first (first l-set)) (???)) 
-;;         (member? (first (first l-set)) (???)))
-;;    (cons (first (first l-set)) (union (rest (first l-set)) (rest l-set)))
-
-;;    :else xxx))
-         
-
 (defn intersect-all
-  ""
+  "Finds intersection between multiple sets.  Required input
+   is a list of sets-of-atoms (or set of sets-of-atoms)"
   [l-set]
-  (if (empty? l-set) 
-    l-set
-    (cons (intersect(first l-set) (first (rest l-set))) intersect-all (rest l-set))))
+  (if (empty? (rest l-set))
+    (first l-set)
+    (intersect (first l-set) (intersect-all (rest l-set)))))
 
-;;(:a :b :c) (:d :a :b) (1 2 :a :d)
+(defn pair?
+  "Predicate evaluates whether the argument is
+   a pair of s-expressions."
+  [x]
+  (cond
+   (atom? x) false
+   (empty? x) false
+   (empty? (rest x)) false
+   (empty? (rest (rest x))) true
+   :else false))
+
+(defn build
+  "Builds a pair from two s-expressions."
+  [s1 s2]
+  (cons s1 (cons s2 '())))
+
+
+(defn fun?
+  "Predicate that evaluates whether the list of the first
+   s-expression from a rel (a set of pairs) comprises a set.
+   Example: '((a b) (c d) (e f)) is a fun, but
+            '((a b) (c d) (a f)) is not a fun since firsts
+            of it is not a set
+   Note: no validity checking is done to ensure the argument
+   is a rel, so if it is not, the answer is not trustworthy."
+  [rel]
+  (isset? (firsts rel)))
+
+(defn revrel
+  "Reverses the order of each pair in a rel, where
+   rel is defined as a set of pairs.
+   Note: no validity checking is done to ensure the argument
+   is a rel, so if it is not, the answer is not trustworthy."
+  [rel]
+  (if (empty? rel)
+    rel
+    (cons (build (second (first rel)) (first (first rel))) (revrel (rest rel)))))
+
+(defn revpair
+  "Reverses the elements in a pair"
+  [pair]
+  (build (second pair) (first pair)))
+
+(defn revrel2
+  "Reverses the order of each pair in a rel, where
+   rel is defined as a set of pairs, this time using
+   the revpair helper function"
+  [rel]
+  (if (empty? rel)
+    rel
+    (cons (revpair (first rel)) (revrel2 (rest rel)))))
+
+
+(defn seconds
+  "An 'extract-col' method where it extracts the second element
+   of each sublist.  Argument +l+ = list of lists."
+  [l]
+  (if (empty? l)
+    l
+    (cons (first (rest (first l))) (seconds (rest l)))))
+
+(defn fullfun?
+  ""
+  [fun]
+  (isset? (seconds fun)))
+
+(defn one-to-one?
+  "Predicate that evaluates whether the second of the first
+   s-expression from a fun (a set of pairs where the first
+   element of the list forms a set) comprises a set
+   Example: '((a b) (c d) (e f)) is a fullfun, but
+            '((a b) (c d) (e d)) is not a fullfun
+   Note: no validity checking is done to ensure the argument
+   is a fun, so if it is not, the answer is not trustworthy."
+  [fun]
+  (fun? (revrel2 fun)))
+
+
+    
+
+;; ------------------- ;;
+;; ---[ Chapter 8 ]--- ;;
+;; ------------------- ;;
+
+(defn rember-f?
+  "A rember function that takes a function +f+ to invoke
+   to test whether the s-expr +s+ is in the list +l+.
+   Note that while rember-f will take any s-expr, it will
+   not recursively search down into the sub lists of l to
+   find +s+, so it is similar to rember, not rember*."
+  [f a l]
+  (cond
+   (empty? l) l
+   (f a (first l)) (rest l)
+;; (f a (first l)) (rember-f? f a (rest l))  ;; this would also work
+   :else (cons (first l) (rember-f? f a (rest l)))))
+
+(defn eq?-c
+  "Functions that curries the '=' function by taking
+   one element to compare to and returns a prediate func
+   that will return true if the argument passed to it
+   matches the argument originally passed to eq?-c."
+  [a]
+  (fn [x] (= a x)))
+
+(defn rember-f2?
+  "Partial application version of rember (or rember-f) that 
+   takes a comparison/equality predicate operator and returns 
+   an anonymous function/lambda that takes an atom and list
+   to act like rember does (depending on how the predicate
+   operator works"
+  [f]
+  (fn [a l]
+    (cond
+     (empty? l) l
+     (f a (first l)) (rest l)
+     :else (cons (first l) ((rember-f2? f) a (rest l))))))
+      
+(defn rember-f3?
+  "My version of rember-f2 that I suspect is more efficient
+   than recalling the outer method - instead we keep recalling
+   the one inner closure we created, but I have to give it a
+   name now"
+  [f]
+  (defn rem-closure [a l]
+    (cond
+     (empty? l) l
+     (f a (first l)) (rest l)
+     :else (cons (first l) (rem-closure a (rest l)))))) ;; efficient?
+      
+
+(defn insertL-f
+  "Partial application version of insertL that takes a comparison
+   predicate function first and returns a lambda that acts like
+   insertL (the original version)"
+  [f]
+  (defn intern-closure [new old lat]
+    (cond
+     (empty? lat) lat
+  
+     (f old (first lat))
+     (cons new (cons old (intern-closure new old (rest lat))))
+     
+     :else (cons (first lat) (intern-closure new old (rest lat))))))
+
+
+(defn insertR-f
+  "Partial application version of insertR that takes a comparison
+   predicate function first and returns a lambda that acts like
+   insertR (the original version)"
+  [f]
+  (defn intern-closure [new old lat]
+    (cond
+     (empty? lat) lat
+  
+     (f old (first lat))
+     (cons old (cons new (intern-closure new old (rest lat))))
+     
+     :else (cons (first lat) (intern-closure new old (rest lat))))))
+
+(defn seqL
+  "Takes two elements to cons onto list +l+.
+   Prepends in the order: +new+, +old+"
+  [new old l]
+  (cons new (cons old l)))
+
+(defn seqR
+  "Takes two elements to cons onto list +l+.
+   Prepends in the order: +old+, +new+"
+  [new old l]
+  (cons old (cons new l)))
+
+(defn insert-g
+  ""
+  [seq-f]
+  (defn insg-closure [new old l]
+    (cond
+     (empty? l) l
+     (= old (first l)) (seq-f new old (insg-closure new old (rest l)))
+     :else (cons (first l) (insg-closure new old (rest l))))))

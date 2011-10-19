@@ -774,9 +774,113 @@
 
 
 (println (str "\n" (header-str "intersect-all")))
-;; (assert-eqset '(2)     (intersect-all '((1 2) (2 3))             ) "1")
-;; (assert-eqset '(2)     (intersect-all '((1 2) (2 3) (3 2))      ) "2")
-;; (assert-eqset '(2 3)   (intersect-all '((1 2 3) (2 3 1) (1 3 :a)) ) "3")
+(assert-eqset '(2)   (intersect-all '((1 2) (2 3))              ) "1")
+(assert-eqset '(2)   (intersect-all '((1 2) (2 3) (3 2))        ) "2")
+(assert-eqset '(1 3) (intersect-all '((1 2 3) (2 3 1) (1 3 :a)) ) "3")
+(assert-eqset '()    (intersect-all '((1 2 3) (2 3 1) (1 3 :a 6 5) ()) ) "4")
+
+(println (str "\n" (header-str "pair?")))
+(assert-true  (pair? '(1 2)),               "1")
+(assert-false (pair? '()),                  "2")
+(assert-false (pair? '(2)),                 "3")
+(assert-false (pair? '(1 2 3)),             "4")
+(assert-true  (pair? '((1 2) 3)),           "5")
+(assert-true  (pair? '(1 (2 3))),           "6")
+(assert-true  (pair? '((:a 1) (2 (3 :b)))), "7")
+(assert-false (pair? '((:a 1))),            "8")
+
+(println (str "\n" (header-str "revrel")))
+(assert-eq '((2 1) (4 3) (:b :a))  (revrel '((1 2) (3 4) (:a :b))), "1")
+(assert-eq '(((2) (1)) (5 (3 4)))  (revrel '(((1) (2)) ((3 4) 5))), "2")
+
+(println (str "\n" (header-str "revrel2")))
+(assert-eq '((2 1) (4 3) (:b :a))  (revrel2 '((1 2) (3 4) (:a :b))), "1")
+(assert-eq '(((2) (1)) (5 (3 4)))  (revrel2 '(((1) (2)) ((3 4) 5))), "2")
+
+
+(println (str "\n" (header-str "seconds")))
+(assert-eq '(2 5 8) (seconds '((1 2 3) (4 5 6) (7 8 9))) "1")
+(assert-eq '(2 5 nil) (seconds '((1 2 3) (4 5) (7))) "2")
+(assert-eq '(nil 5 8) (seconds '((1) (4 5) (7 8 9))) "3")
+(assert-eq '((3) 5 :b) (seconds '(((1 2) (3)) (4 5) ((:a) :b (:c :d)))) "4")
+
+(println (str "\n" (header-str "fullfun?")))
+(assert-true  (fullfun? '((1 2) (3 4) (5 6) (:a :b))),        "1")
+(assert-false (fullfun? '((1 2) (3 4) (5 6) (:a 2))),         "2")
+(assert-true  (fullfun? '((1 2) (3 4) (5 (6)) (:a (:b :c)))), "3")
+(assert-true  (fullfun? '((1 2) (3 4) (5 (6)) (:a 6))),       "4")
+(assert-true  (fullfun? '((1 2) (3 4) (5 (6)) (:a 6))),       "5")
+;; this should be false, since it is not a fun, but
+;; that is not part of the checking they put in the code
+(assert-true  (fullfun? '((3 2) (3 4) (5 (6)) (:a 6))),       "5")
+
+(println (str "\n" (header-str "one-to-one?")))
+(assert-true  (one-to-one? '((1 2) (3 4) (5 6) (:a :b))),        "1")
+(assert-false (one-to-one? '((1 2) (3 4) (5 6) (:a 2))),         "2")
+(assert-true  (one-to-one? '((1 2) (3 4) (5 (6)) (:a (:b :c)))), "3")
+(assert-true  (one-to-one? '((1 2) (3 4) (5 (6)) (:a 6))),       "4")
+(assert-true  (one-to-one? '((1 2) (3 4) (5 (6)) (:a 6))),       "5")
+
+(println (str "\n" (header-str "rember-f?")))
+(assert-eq  '(1 3) (rember-f? = 2 '(1 2 3)), "1")
+(assert-eq  '(1 4) (rember-f? = '(2 3) '(1 (2 3) 4)), "2")
+
+(println (str "\n" (header-str "eq-c?")))
+(def eq-6 (eq?-c 6))
+(assert-true  (eq-6 6),       "1")
+(assert-true  (eq-6 (+ 1 5)), "2")
+(assert-false (eq-6 7),       "3")
+
+(println (str "\n" (header-str "rember-f2?")))
+(def rm-with-equals (rember-f2? =))
+(assert-eq  '(1 3) (rm-with-equals 2 '(1 2 3)),          "1")
+(assert-eq  '(1 4) (rm-with-equals '(2 3) '(1 (2 3) 4)), "2")
+
+(println (str "\n" (header-str "rember-f3?")))
+(def rm-with-equals3 (rember-f3? =))
+(assert-eq  '(1 3)   (rm-with-equals3 2 '(1 2 3))          "1")
+(assert-eq  '(1 4)   (rm-with-equals3 '(2 3) '(1 (2 3) 4)) "2")
+(assert-eq  '(1 3 2) (rm-with-equals3 2 '(1 2 3 2))        "3")
+
+(println (str "\n" (header-str "rember-f3? - not equals op")))
+(def rm-with-not-equals (rember-f3? not=))
+(assert-eq  '(2 3) (rm-with-not-equals 2 '(1 2 3)),        "1")
+(assert-eq  '((2 3) 4) (rm-with-not-equals '(2 3) '(1 (2 3) 4)),  "2")
+(assert-eq  '(1 4) (rm-with-not-equals 1 '(1 (2 3) 4)),   "3")
+
+(println (str "\n" (header-str "insertL-f")))
+(def insertL-w-eq (insertL-f =))
+(assert-eq '(1 2 666 3 4 :5) (insertL-w-eq 666 3 '(1 2 3 4 :5))   "1")
+(assert-eq '(666 1 2 3 4 :5) (insertL-w-eq 666 1 '(1 2 3 4 :5))   "2")
+(assert-eq '(1 2 3 4 666 :5) (insertL-w-eq 666 :5 '(1 2 3 4 :5))  "3")
+(assert-eq '(1 2 3 4 :5)     (insertL-w-eq 666 :NA '(1 2 3 4 :5)) "4")
+(assert-eq '()               (insertL-w-eq :new :old '())         "5")
+(assert-eq '(1 2)            (insertL-w-eq :new nil '(1 2))       "6")
+
+(println (str "\n" (header-str "insertR-f")))
+(def insertR-lambda (insertR-f =))
+(assert-eq '(1 2 3 666 4 :5) (insertR-lambda 666 3 '(1 2 3 4 :5)) "1")
+(assert-eq '(1 666 2 3 4 :5) (insertR-lambda 666 1 '(1 2 3 4 :5)) "2")
+(assert-eq '(1 2 3 4 :5 666) (insertR-lambda 666 :5 '(1 2 3 4 :5)) "3")
+(assert-eq '(1 2 3 4 :5) (insertR-lambda 666 :NA '(1 2 3 4 :5)) "4")
+(assert-eq '() (insertR-lambda :new :old '()) "5")
+(assert-eq '(1 2) (insertR-lambda :new nil '(1 2)) "6")
+
+
+(println (str "\n" (header-str "insert-g")))
+;; with seqR
+(def ins-right (insert-g seqR))
+(assert-eq '(1 2 3 666 4 :5) (ins-right 666 3 '(1 2 3 4 :5))         "1")
+(assert-eq '(1 666 2 3 4 :5) ((insert-g seqR) 666 1 '(1 2 3 4 :5))   "2")
+(assert-eq '(1 2 3 4 :5 666) ((insert-g seqR) 666 :5 '(1 2 3 4 :5))  "3")
+(assert-eq '(1 2 3 4 :5)     ((insert-g seqR) 666 :NA '(1 2 3 4 :5)) "4")
+(assert-eq '()               ((insert-g seqR) :new :old '())         "5")
+(assert-eq '(1 2)            ((insert-g seqR) :new nil '(1 2))       "6")
+
+;; with seqL
+(assert-eq '(1 2 666 3 4 :5) ((insert-g seqL) 666 3 '(1 2 3 4 :5))   "7")
+(assert-eq '(666 1 2 3 4 :5) ((insert-g seqL) 666 1 '(1 2 3 4 :5))   "8")
+(assert-eq '(1 2 3 4 666 :5) ((insert-g seqL) 666 :5 '(1 2 3 4 :5))  "9")
 
 
 ;; ------------------- ;;
