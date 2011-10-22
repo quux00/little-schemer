@@ -559,6 +559,24 @@
    (exp (value (first nexp)) (value (first (rest (rest nexp)))))))
 
 
+(defn nf-1st-sub-exp
+  "returns the first sub expression for infix (nf) notation
+   arithmetic expressions"
+  [aexp]
+  (first aexp))
+
+(defn nf-2nd-sub-exp
+  "returns the second sub expression for infix (nf) notation
+   arithmetic expressions"
+  [aexp]
+  (first (rest (rest aexp))))
+
+(defn nf-operator
+  "returns the operator expression for infix (nf) notation
+   arithmetic expressions"  
+  [aexp]
+  (first (rest aexp)))
+
 (defn pf-1st-sub-exp
   "returns the first sub expression for prefix (pf) notation
    arithmetic expressions"
@@ -848,7 +866,6 @@
   (cond
    (empty? l) l
    (f a (first l)) (rest l)
-;; (f a (first l)) (rember-f? f a (rest l))  ;; this would also work
    :else (cons (first l) (rember-f? f a (rest l)))))
 
 (defn eq?-c
@@ -934,3 +951,129 @@
      (empty? l) l
      (= old (first l)) (seq-f new old (insg-closure new old (rest l)))
      :else (cons (first l) (insg-closure new old (rest l))))))
+
+(defn atom-to-function
+  ""
+  [x]
+  (cond
+   (= x '+) +
+   (= x '-) -
+   (= x '*) *
+   (= x '/) /
+   (= x 'exp) exp
+   :else nil))
+
+(defn value2
+  "Rewrite of the value function as a higher order function
+   to keep code base DRY. See doc of value function."
+  [nexp]
+  (if (number? nexp)
+    nexp
+    (if (numbered? nexp)
+      ((atom-to-function (nf-operator nexp))
+       (value2 (nf-1st-sub-exp nexp)) (value2 (nf-2nd-sub-exp nexp)))
+      nil)))
+
+
+(defn multirember-f
+  "Partial application version of multirember that takes a test predicate
+   function and returns a multirember function using that test predicate.
+   The returned function takes atom +a+ and lat +lat+ as arguments."
+  [f]
+  (defn mrm-closure [a lat]
+    (cond
+     (empty? lat) lat
+     (f a (first lat)) (mrm-closure a (rest lat))
+     :else (cons (first lat) (mrm-closure a (rest lat))))))
+
+(defn multirember&co
+  "continuation-style passing function that collects all atoms
+   that are not found in +lat+ in the first list and all atoms
+   that are found in +lat+ in the second list and finally calls
+   the function +col+ with those lists.  The return value of
+   col is the return value of multirember&co. "
+  [a lat col]
+  (cond
+   (empty? lat) (col '() '())
+
+   (= a (first lat)) 
+   (multirember&co a (rest lat) (fn [newlat seen]
+                                  (col newlat (cons (first lat) seen))))
+
+   :else (multirember&co a (rest lat) (fn [newlat seen]
+                                        (col (cons (first lat) newlat) seen)))))
+
+(defn multiinsertLR
+  "Version of multiinsert that inserts +new+ to the left of
+   oldL and to the right of oldR.  If oldL == oldR, then it
+   will only insert to the left.  It returns the new lat."
+  [new oldL oldR lat]
+  (cond
+   (empty? lat) lat
+  
+   (= oldL (first lat)) 
+   (cons new (cons oldL (multiinsertLR new oldL oldR (rest lat))))
+   
+   (= oldR (first lat))
+   (cons oldR (cons new (multiinsertLR new oldL oldR (rest lat))))
+   
+   :else (cons (first lat) (multiinsertLR new oldL oldR (rest lat)))))
+
+
+(defn multiinsertLR&co
+  "Version of multiinsertLR that takes a collector function
+   that will be applied to the new lat, the number of left insertions
+   and the number of right insertions"
+  [new oldL oldR lat col]
+  (cond
+   (empty? lat) (col '() 0 0)
+
+   (= oldL (first lat))
+   (multiinsertLR&co new oldL oldR (rest lat) 
+                     (fn [newlat nleft nright]
+                       (col (cons new (cons oldL newlat)) (inc nleft) nright)))
+                                                
+   (= oldR (first lat))
+   (multiinsertLR&co new oldL oldR (rest lat) 
+                     (fn [newlat nleft nright]
+                       (col (cons oldR (cons new newlat)) nleft (inc nright))))
+          
+   :else (multiinsertLR&co new oldL oldR (rest lat)
+                           (fn [newlat nleft nright]
+                             (col (cons (first lat) newlat) nleft nright)))))
+
+(defn evens-only*
+  "Removes all odd numbers from a list, including nested lists. 
+   Returns the new list with only evens."
+  [l]
+  (cond
+   (empty? l) l
+   (list? (first l)) (cons (evens-only* (first l)) (evens-only* (rest l)))
+   (even? (first l)) (cons (first l) (evens-only* (rest l)))
+   :else (evens-only* (rest l))))
+  
+
+(defn evens-only*&co
+  "A version of evens only that also multiplies the even numbers
+   and sums up the odd numbers, then calls the function +col+
+   passed in"
+  [l col]
+  (cond
+   (empty? l) (col l 1 0)
+   
+   (list? (first l)) (evens-only*&co (first l)
+                                     (fn [al ap as]
+                                       (evens-only*&co (rest l)
+                                                       (fn [newl eprod sodd]
+                                                         (col (cons al newl) (* ap eprod) (+ as sodd))))))
+
+   (even? (first l)) (evens-only*&co (rest l)
+                                     (fn [newl eprod sodd]
+                                       (col (cons (first l) newl) (* (first l) eprod) sodd)))
+
+   :else (evens-only*&co (rest l)
+                         (fn [newl eprod sodd]
+                           (col newl eprod (+ (first l) sodd))))))
+
+
+

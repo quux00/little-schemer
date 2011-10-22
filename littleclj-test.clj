@@ -883,6 +883,68 @@
 (assert-eq '(1 2 3 4 666 :5) ((insert-g seqL) 666 :5 '(1 2 3 4 :5))  "9")
 
 
+(println (str "\n" (header-str "value2")))
+(assert-eq nil  (value2 '())                                     "1")
+(assert-eq 1    (value2 1)                                       "2")
+(assert-eq 2    (value2 '(1 + 1))                                "3")
+(assert-eq 4    (value2 '((1 * 2) + 2))                          "4")
+(assert-eq 22   (value2 '((1 * 2) + (2 * 10)))                   "5")
+(assert-eq 408  (value2 '(((1 * 2) exp 3) + ((2 * 10) exp 2)))   "6")
+(assert-eq nil  (value2 '(((1 2) exp 3) + ((2 * 10) exp 2)))     "7")
+(assert-eq nil  (value2 '(((1 * 2) exp exp) + ((2 * 10) exp 2))) "8")
+(assert-eq nil  (value2 '((1 2 2) 2 2))                          "9")
+(assert-eq nil  (value2 '*)                                      "10")
+(assert-eq nil  (value2 "foo")                                   "11")
+(assert-eq nil  (value2 :foo)                                    "12")
+
+
+(println (str "\n" (header-str "multirember-f")))
+(assert-eq '(:a)        ((multirember-f =) :ab '(:a :ab))                "1")
+(assert-eq '()          ((multirember-f =) :ab '())                      "2")
+(assert-eq '(:a :ab :c) ((multirember-f =) :x '(:a :ab :c))              "3")
+(assert-eq '(:a :c)     ((multirember-f =) :ab '(:a :ab :c))             "4")
+(assert-eq '(:a :c)     ((multirember-f =) :ab '(:a :ab :c :ab))         "5")
+(assert-eq '(:a :c)     ((multirember-f =) :ab '(:a :ab :ab :c))         "6")
+(assert-eq '(:a :c)     ((multirember-f =) :ab '(:ab :a :ab :c :ab :ab)) "7")
+(assert-eq '(:x)        ((multirember-f =) :ab '(:ab :ab :ab :x))        "8")
+(assert-eq '()          ((multirember-f =) :ab '(:ab :ab :ab))           "9")
+
+
+(println (str "\n" (header-str "mutliinsertLR")))
+(assert-eq '(1 2 666 3 4 :5)
+           (multiinsertLR 666 3 24 '(1 2 3 4 :5)) "1")
+(assert-eq '(666 1 2 666 3 4 :5)
+           (multiinsertLR 666 1 2 '(1 2 3 4 :5)) "2")
+(assert-eq '(1 2 3 4 666 :5)
+           (multiinsertLR 666 :5 :5 '(1 2 3 4 :5)) "3")
+(assert-eq '(1 2 3 4 :5)
+           (multiinsertLR 666 :NA :NB '(1 2 3 4 :5)) "4")
+(assert-eq '()
+           (multiinsertLR :new :old :old2 '()) "5")
+(assert-eq '(1 2)
+           (multiinsertLR :new nil nil '(1 2)) "6")
+(assert-eq '(666 1 2 666 1 3 4 :5 666 666 1)
+           (multiinsertLR 666 1 :5 '(1 2 1 3 4 :5 1)) "7")
+
+
+(println (str "\n" (header-str "multiinsertLR&co")))
+(defn makemap [newlat nleft nright]
+  {:newlat newlat, :nleft nleft, :nright nright})
+(assert-eq {:newlat '(1 2 666 3 4 :5), :nleft 1, :nright 0}
+           (multiinsertLR&co 666 3 24 '(1 2 3 4 :5), makemap) "1")
+
+(println (str "\n" (header-str "evens-only*")))
+(assert-eq '() (evens-only* '(1 3 5 3 1)) "1")
+(assert-eq '(()) (evens-only* '(1 3 5 (3 1))) "2")
+(assert-eq '(2 4 6) (evens-only* '(1 2 3 4 5 6 7)) "3")
+(assert-eq '(2 (4 6) (8) 10) (evens-only* '(1 2 (3 4 5 6 ) 7 (8) 9 10)) "3")
+
+(println (str "\n" (header-str "evens-only*&co")))
+(defn makemap2 [newlat p s]
+  {:newlat newlat, :product 1920, :sum 38})
+(assert-eq {:newlat '((2 8) 10 (() 6) 2), :product 1920, :sum 38}
+           (evens-only*&co '((9 1 2 8) 3 10 ((9 9) 7 6) 2), makemap2) "1")
+
 ;; ------------------- ;;
 ;; ---[ END TESTS ]--- ;;
 ;; ------------------- ;;
