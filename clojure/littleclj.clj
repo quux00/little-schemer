@@ -895,7 +895,7 @@
    the one inner closure we created, but I have to give it a
    name now"
   [f]
-  (defn rem-closure [a l]
+  (fn rem-closure [a l]
     (cond
      (empty? l) l
      (f a (first l)) (rest l)
@@ -907,7 +907,7 @@
    predicate function first and returns a lambda that acts like
    insertL (the original version)"
   [f]
-  (defn intern-closure [new old lat]
+  (fn intern-closure [new old lat]
     (cond
      (empty? lat) lat
   
@@ -922,7 +922,7 @@
    predicate function first and returns a lambda that acts like
    insertR (the original version)"
   [f]
-  (defn intern-closure [new old lat]
+  (fn intern-closure [new old lat]
     (cond
      (empty? lat) lat
   
@@ -946,14 +946,15 @@
 (defn insert-g
   ""
   [seq-f]
-  (defn insg-closure [new old l]
+  (fn insg-closure [new old l]
     (cond
      (empty? l) l
      (= old (first l)) (seq-f new old (insg-closure new old (rest l)))
      :else (cons (first l) (insg-closure new old (rest l))))))
 
 (defn atom-to-function
-  ""
+  "matches an atom that represents a mathematical function
+   and returns the corresponding function"
   [x]
   (cond
    (= x '+) +
@@ -980,7 +981,7 @@
    function and returns a multirember function using that test predicate.
    The returned function takes atom +a+ and lat +lat+ as arguments."
   [f]
-  (defn mrm-closure [a lat]
+  (fn mrm-closure [a lat]
     (cond
      (empty? lat) lat
      (f a (first lat)) (mrm-closure a (rest lat))
@@ -1077,3 +1078,188 @@
 
 
 
+
+;; ------------------- ;;
+;; ---[ Chapter 9 ]--- ;;
+;; ------------------- ;;
+   
+(defn keep-looking
+  "Looks through a lat for +a+. If +sorn+ is a number, it 
+   uses it as an index into +lat+ and looks up that index.
+   If that position in the +lat+ is a number, then it follows
+   it to that index, etc., until it gets to a value that is 
+   not a number, which it then compares to a, return true
+   if the non-number matches a.  There, +a+ cannot be a number.
+   This function is prone to infinite recursion if the 'follow 
+   path' in the numbers of the lat are circular/form a loop."
+  [a sorn lat]
+  (if (number? sorn)
+    (keep-looking a (pick sorn lat) lat)
+    (= a sorn)))
+
+(defn shift
+  ""
+  [pair-of-pairs]
+  (build (first (first pair-of-pairs))
+         (build (second (first pair-of-pairs)) (second pair-of-pairs))))
+
+(defn length-gen*
+  "Counts the number of atoms in +pora+"
+  [pora]
+  (empty? pora) 0
+  (atom? (first pora)) (inc (length-gen* (rest pora)))
+  :else (+ (length-gen* (first pora)) (length-gen* (rest pora))))
+
+
+(defn length*
+  "Counts the number of atoms in +pora+"
+  [pora]
+  (if (atom? (first pora))  ; don't need to check for empty list, since it
+    1                       ; doesn't recuse on rest, but just first and second
+    (+ (length* (first pora)) (length* (second pora)))))
+
+(defn eternity
+  "Eternally loops on itself"
+  [x]
+  (eternity x))
+
+;; (defn length
+;;   "Returns the length of a list."
+;;   [lat]
+;;   (if (empty? lat)
+;;     0
+;;     (inc (length (rest lat)))))
+
+;; Define length0 as an anonymous function (p. 160)
+;; two ways in Clojure to define anonymous functions
+;; ... with fn
+(fn [l] (if (empty? l) 0 (eternity (rest l))))
+;; ... with #() reader feature
+#(if (empty? %) 0 (inc (eternity (rest %))))
+
+;; now test it
+(println ((fn [l] (if (empty? l) 0 (eternity (rest l)))) '()))
+(println (#(if (empty? %) 0 (inc (eternity (rest %))))   '()))
+
+
+;; Define length<=1 (p. 161)
+(fn [l]
+  (cond
+   (empty? l) 0
+   :else (inc ((fn [l]
+                 (cond
+                  (empty? l) 0
+                  :else (inc (eternity (rest l)))))
+               (rest l)))))
+
+; test it
+(println ((fn [l]
+           (cond
+            (empty? l) 0
+            :else (inc ((fn [l]
+                          (cond
+                           (empty? l) 0
+                           :else (inc (eternity (rest l)))))
+                        (rest l))))) '()))
+(println ((fn [l]
+           (cond
+            (empty? l) 0
+            :else (inc ((fn [l]
+                          (cond
+                           (empty? l) 0
+                           :else (inc (eternity (rest l)))))
+                        (rest l))))) '(2)))
+
+;; page 168 - runs but blows the stack
+;; (((fn [mk-length]
+;;     (mk-length mk-length))
+;;   (fn [mk-length]
+;;     ((fn [length]
+;;        (fn [l]
+;;          (cond
+;;           (empty? l) 0
+;;           :else (inc (length (rest l))))))
+;;        (mk-length mk-length))))
+;;   '(:apples))
+
+;; the Y-Combinator
+(defn Y
+  "The Y-Combinator"
+  [le]
+  ((fn [ff] (ff ff))
+   (fn [fx]
+     (le (fn [x] ((fx fx) x))))))
+
+
+;; ------------------- ;;
+;; ---[ Chapter 10]--- ;;
+;; ------------------- ;;
+
+(def new-entry build)
+
+(defn lookup-in-entry-help
+  "Helper method for lookup-in-entry-help
+   that does the actual work"
+  [name names values entry-f]
+  (cond
+   (empty? names) (entry-f name)
+   (= name (first names)) (first values)
+   :else (lookup-in-entry-help name 
+                               (rest names) 
+                               (rest values)
+                               entry-f)))
+
+(defn lookup-in-entry
+  "+entry+ is defined as a pair of lists, where the first
+   list is a set and the pairs have equal lengths - a 
+   form of a map data structure.  This method looks for 
+   +name+ is the entry set (names) and returns the value
+   associated with that key (name).  If +name+ is not a key,
+   then the entry-f method is invoked, passing it +name+."
+  [name entry entry-f]
+  (lookup-in-entry-help name
+                        (first entry)
+                        (second entry)
+                        entry-f))
+
+  
+(defn lookup-in-table
+  "+table+ is defined as a list of entries (see lookup-
+   in-entry for definition of entry."
+  [name table table-f]
+  (if (empty? table) 
+    (table-f name)
+    (lookup-in-entry name
+                     (first table)
+                     (fn [name]
+                       (lookup-in-table name
+                                        (rest table)
+                                        table-f)))))
+
+
+;; this is my original version of lookup-in-table
+;; before looking at the book answer
+(defn lup-in-table-help
+  [name names values table table-f]
+  (cond
+   (empty? table) (table-f name)
+   (empty? names) (lup-in-table-help name
+                                     (first  (first (rest table)))
+                                     (second (first (rest table)))
+                                     (rest table)
+                                     table-f)
+   (= name (first names)) (first values)
+   :else (lup-in-table-help name
+                            (rest names)
+                            (rest values)
+                            table
+                            table-f)))
+
+(defn lup-in-table
+  [name table table-f]
+  (lup-in-table-help name
+                     (first  (first table))
+                     (second (first table))
+                     table
+                     table-f))
+  

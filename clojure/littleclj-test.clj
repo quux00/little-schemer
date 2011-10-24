@@ -779,6 +779,11 @@
 (assert-eqset '(1 3) (intersect-all '((1 2 3) (2 3 1) (1 3 :a)) ) "3")
 (assert-eqset '()    (intersect-all '((1 2 3) (2 3 1) (1 3 :a 6 5) ()) ) "4")
 
+(println (str "\n" (header-str "build")))
+(assert-eq '(1 2)         (build 1 2)           "1")
+(assert-eq '((1 2) 3)     (build '(1 2) 3)      "2")
+(assert-eq '((1 2) (3 4)) (build '(1 2) '(3 4)) "3")
+
 (println (str "\n" (header-str "pair?")))
 (assert-true  (pair? '(1 2)),               "1")
 (assert-false (pair? '()),                  "2")
@@ -944,6 +949,56 @@
   {:newlat newlat, :product 1920, :sum 38})
 (assert-eq {:newlat '((2 8) 10 (() 6) 2), :product 1920, :sum 38}
            (evens-only*&co '((9 1 2 8) 3 10 ((9 9) 7 6) 2), makemap2) "1")
+
+;; ---[ Chapter 9 Tests ]--- ;;
+(println (str "\n" (header-str "pick")))
+(assert-eq 4   (pick 1 '(4 3 2 1)) "1")
+(assert-eq 3   (pick 2 '(4 3 2 1)) "2")
+(assert-eq 2   (pick 3 '(4 3 2 1)) "3")
+(assert-eq 1   (pick 4 '(4 3 2 1)) "4")
+(assert-eq nil (pick 5 '(4 3 2 1)) "5")
+
+(println (str "\n" (header-str "keep-looking")))
+(assert-false (keep-looking :a 1 '(4 3 :b 2)) "1")
+(assert-true  (keep-looking :a 1 '(4 3 :a 2)) "2")
+(assert-false (keep-looking :a 9 '(4 3 :a 2)) "2")
+
+(println (str "\n" (header-str "shift")))
+(assert-eq '(:a (:b (:c :d))) (shift '((:a :b) (:c :d))) "1")
+
+;; ---[ Chapter 10 Tests ]--- ;;
+(println (str "\n" (header-str "new-entry")))
+(assert-eq '(1 2)         (new-entry 1 2)           "1")
+(assert-eq '((1 2) 3)     (new-entry '(1 2) 3)      "2")
+(assert-eq '((1 2) (3 4)) (new-entry '(1 2) '(3 4)) "3")
+
+(println (str "\n" (header-str "lookup-in-entry")))
+(defn not-found [x] nil)
+(def mymap (new-entry '(:taco :kf :bo      :burger)
+                      '(:bell :c  :jangles :king)))
+(assert-eq :bell (lookup-in-entry :taco   mymap not-found) "1")
+(assert-eq :king (lookup-in-entry :burger mymap not-found) "2")
+(assert-eq nil   (lookup-in-entry :wendys mymap not-found) "3")
+
+
+
+(def mytable '( ((:entree    :dessert)
+                 (:spaghetti :spumoni))
+                ((:appetizer :entree :beverage)
+                 (:food      :tastes :good)) ))
+
+(println (str "\n" (header-str "lup-in-table")))
+(assert-eq nil        (lup-in-table :na       mytable not-found) "1")
+(assert-eq :spumoni   (lup-in-table :dessert  mytable not-found) "2")
+(assert-eq :spaghetti (lup-in-table :entree   mytable not-found) "3")
+(assert-eq :good      (lup-in-table :beverage mytable not-found) "4")
+
+(println (str "\n" (header-str "lookup-in-table")))
+(assert-eq nil        (lookup-in-table :na       mytable not-found) "1")
+(assert-eq :spumoni   (lookup-in-table :dessert  mytable not-found) "2")
+(assert-eq :spaghetti (lookup-in-table :entree   mytable not-found) "3")
+(assert-eq :good      (lookup-in-table :beverage mytable not-found) "4")
+
 
 ;; ------------------- ;;
 ;; ---[ END TESTS ]--- ;;
