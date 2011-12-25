@@ -519,7 +519,9 @@
     (and (bk-numbered? (first aexp))
          (bk-numbered? (first (rest (rest aexp)))))))
 
-(defn value
+;; changed to nvalue for "numeric value" since the name "value"
+;; gets overloaded in Chapter 10 as a Scheme interpreter function
+(defn nvalue
   "My version of the first value function. It uses number? instead
    of atom? as its primary check and then checks the whole expression
    is numbered? using that function.  Only then does it recurse into
@@ -532,16 +534,16 @@
     (if (numbered? nexp)
       (cond
        (= (first (rest nexp)) '*) 
-       (* (value (first nexp)) (value (first (rest (rest nexp)))))
+       (* (nvalue (first nexp)) (nvalue (first (rest (rest nexp)))))
        
        (= (first (rest nexp)) '+) 
-       (+ (value (first nexp)) (value (first (rest (rest nexp)))))
+       (+ (nvalue (first nexp)) (nvalue (first (rest (rest nexp)))))
        
        (= (first (rest nexp)) 'exp) 
-       (exp (value (first nexp)) (value (first (rest (rest nexp))))))
+       (exp (nvalue (first nexp)) (nvalue (first (rest (rest nexp))))))
       nil)))
 
-(defn bk-value
+(defn bk-nvalue
   "Book version of value function. This version is prone to null
    pointer exceptions if you throw mal-formed expressions such as:
    ((1 2) exp 3)."
@@ -550,13 +552,13 @@
    (atom? nexp) nexp
 
    (= (first (rest nexp)) '+) 
-   (+ (value (first nexp)) (value (first (rest (rest nexp)))))
+   (+ (nvalue (first nexp)) (nvalue (first (rest (rest nexp)))))
 
    (= (first (rest nexp)) '*) 
-   (* (value (first nexp)) (value (first (rest (rest nexp)))))
+   (* (nvalue (first nexp)) (nvalue (first (rest (rest nexp)))))
     
    (= (first (rest nexp)) 'exp) 
-   (exp (value (first nexp)) (value (first (rest (rest nexp)))))))
+   (exp (nvalue (first nexp)) (nvalue (first (rest (rest nexp)))))))
 
 
 (defn nf-1st-sub-exp
@@ -1221,7 +1223,6 @@
                         (first entry)
                         (second entry)
                         entry-f))
-
   
 (defn lookup-in-table
   "+table+ is defined as a list of entries (see lookup-
@@ -1236,8 +1237,8 @@
                                         (rest table)
                                         table-f)))))
 
-
 ;; this is my original version of lookup-in-table
+;; and its helper method
 ;; before looking at the book answer
 (defn lup-in-table-help
   [name names values table table-f]
@@ -1263,3 +1264,58 @@
                      table
                      table-f))
   
+
+(defn atom-to-action
+  ""
+  [a]
+  (if (or (number? a) 
+          (= a true)
+          (= a false)
+          (= a 'cons)
+          (= a 'first)
+          (= a 'rest)
+          (= a 'atom?)
+          (= a 'empty?)
+          (= a '=)
+          (= a 'zero)
+          (= a 'inc)
+          (= a 'dec)
+          (= a 'number?)) 
+    '*const
+    '*identifier))
+        
+
+(defn list-to-action
+  ""
+  [l]
+  (cond 
+   (symbol? (first l))
+   (cond
+    (= (first l) 'cond)   '*cond
+    (= (first l) 'lambda) '*lambda  ;; not in Clojure.core
+    (= (first l) 'fn)     '*fn      ;; added for Clojure
+    :else '*application)
+
+   (list? (first l))
+   (if (= (first (first l)) 'quote)
+     '*quote
+     '*application)
+   :else '*application))
+
+(defn expression-to-action
+  ""
+  [e]
+  (if (atom? e)
+    (atom-to-action e)
+    (list-to-action e)))
+
+(defn meaning
+  ""
+  [e table]
+  ((expression-to-action e) e table))
+
+(defn value
+  ""
+  [e]
+  (meaning e '()))
+
