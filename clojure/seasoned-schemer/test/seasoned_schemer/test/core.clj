@@ -92,6 +92,105 @@
   (is (= true  (member?-recur 1  [1 2 :c :d])))
   (is (= false (member?-recur :e [1 2 :c :d])))
   )
+(deftest test-member?-letrec
+  (is (= true  (member?-letrec :c [1 2 :c :d])))
+  (is (= true  (member?-letrec 1  [1 2 :c :d])))
+  (is (= false (member?-letrec :e [1 2 :c :d])))
+  )
+
+;; union tests
+(deftest test-union
+  (is (= [1 2 3 4 5] (sort (union [1 2] [3 4 5]))))
+  (is (= [1 2 3 4 5] (sort (union [1 2] [3 4 5 1 2]))))
+  (is (= [3 4 5]     (sort (union [] [3 4 5]))))
+  )
+
+(deftest test-union-recur
+  (is (= [1 2 3 4 5] (sort (union-recur [1 2] [3 4 5]))))
+  (is (= [1 2 3 4 5] (sort (union-recur [1 2] [3 4 5 1 2]))))
+  (is (= [3 4 5]     (sort (union-recur [] [3 4 5]))))
+  )
+
+(deftest test-union-letrec
+  (is (= [1 2 3 4 5] (sort (union-letrec [1 2] [3 4 5]))))
+  (is (= [1 2 3 4 5] (sort (union-letrec [1 2] [3 4 5 1 2]))))
+  (is (= [3 4 5]     (sort (union-letrec [] [3 4 5]))))
+  )
+
+(deftest test-union-with-fn
+  (is (= [1 2 3 4 5] (sort (union-with-fn [1 2] [3 4 5]))))
+  (is (= [1 2 3 4 5] (sort (union-with-fn [1 2] [3 4 5 1 2]))))
+  (is (= [3 4 5]     (sort (union-with-fn [] [3 4 5]))))
+  )
+
+;; sum of prefixes with sum-b as hidden inner method
+(deftest test-sum-of-prefixes2
+  (is (= [1 2 3 4 5]    (sum-of-prefixes2 [1 1 1 1 1])))
+  (is (= [2 3 12 29 29] (sum-of-prefixes2 [2 1 9 17 0])))
+  (is (= [55]           (sum-of-prefixes2 [55])))
+  (is (= []             (sum-of-prefixes2 [])))
+  )
+
+(deftest test-sum-of-prefixes2-with-fn
+  (is (= [1 2 3 4 5]    (sum-of-prefixes2-with-fn [1 1 1 1 1])))
+  (is (= [2 3 12 29 29] (sum-of-prefixes2-with-fn [2 1 9 17 0])))
+  (is (= [55]           (sum-of-prefixes2-with-fn [55])))
+  (is (= []             (sum-of-prefixes2-with-fn [])))
+  )
+
+;;; --------------------------------------------------- ;;;
+;;; -----------------[ Chapter 13 ] ------------------- ;;;
+;;; --------------------------------------------------- ;;;
+
+(deftest test-intersect
+  (is (= [:a :c :e] (intersect [:a :b :c :d :e] [1 :a :c :e 3])))
+  (is (= [] (intersect [:a :b :c :d :e] [1 2 3 4])))
+  (is (= [:a] (intersect [:a] [:f :g :h :a 1])))
+  )
+
+(deftest test-intersect-all
+  (is (= [:a] (intersect-all [[:a :b :c] [:d :a :e] [:f :g :h :a 1]])))
+  (is (= [] (intersect-all [[:a :b :c] [:d :a :e] [:f :g :h 2 1]])))
+  )
+
+(deftest test-rember-beyond-first
+  (is (= [:noodles :spag :spa :bean-thread]
+           (rember-beyond-first :roots [:noodles :spag :spa :bean-thread :roots :po :yam :others :rice])))
+  
+  (is (= [:noodles :spag :spa :bean-thread :roots :po :yam :others :rice]
+           (rember-beyond-first :na [:noodles :spag :spa :bean-thread :roots :po :yam :others :rice])))  
+
+  (is (= [:a :b :c]
+           (rember-beyond-first :d [:a :b :c :d :e :f :d :g :h])))
+  )
+
+(deftest test-rember-beyond-first-recur
+  (is (= [:noodles :spag :spa :bean-thread]
+           (rember-beyond-first-recur :roots [:noodles :spag :spa :bean-thread :roots :po :yam :others :rice])))
+  
+  (is (= [:noodles :spag :spa :bean-thread :roots :po :yam :others :rice]
+           (rember-beyond-first-recur :na [:noodles :spag :spa :bean-thread :roots :po :yam :others :rice])))  
+
+  (is (= [:a :b :c]
+           (rember-beyond-first-recur :d [:a :b :c :d :e :f :d :g :h])))
+  )
+
+(deftest test-rember-upto-last-recur
+  (is (= [:d :e :f] (rember-upto-last-recur :c [:a :b :c :d :e :f])))
+  (is (= [:g :h :i] (rember-upto-last-recur :c [:a :b :c :d :e :f :c :g :h :i])))
+  (is (= [1 2 3 4 5] (rember-upto-last-recur :c [1 2 3 4 5])))
+  )
+
+
+;;; --------------------------------------------------- ;;;
+;;; -----------------[ Chapter 14 ] ------------------- ;;;
+;;; --------------------------------------------------- ;;;
+
+(deftest test-leftmost
+  (is (= :a (leftmost [:a :b [:c :d]])))
+  (is (= :a (leftmost [[:a :b] [:c :d]])))
+  (is (= :a (leftmost [[] [] [[:a]] :b [:c :d]])))
+  )
 
 ;; helper func to quickly run all tests from the REPL
 (defn rt []
