@@ -1,4 +1,4 @@
-(ns seasoned-schemer.macros
+(ns seasoned-schemer.helpers
   (:require [clojure.walk :as walk]))
 
 ;; From https://gist.github.com/486880
@@ -44,3 +44,22 @@
     (ffirst @(first (nfirst @(second NY)))))
 
   )
+
+
+;; From clojure-contrib.monads by Konrad Hinsen
+;; https://github.com/clojure/clojure-contrib/blob/master/modules/monads/src/main/clojure/clojure/contrib/monads.clj
+;; TODO: not sure how to use this - probably need to understand the entire monad module
+;;       to understand how to "return a continuation" from the function you pass to call-cc
+;; I tried, but failed, using it with the example code from the wikipedia:
+;;   http://en.wikipedia.org/wiki/Call-with-current-continuation
+;;   and didn't understand the example code provided with clojure-contrib.monad
+(defn call-cc
+  "A computation in the cont monad that calls function f with a single
+   argument representing the current continuation. The function f should
+   return a continuation (which becomes the return value of call-cc),
+   or call the passed-in current continuation to terminate."
+  [f]
+  (fn [c]
+    (let [cc (fn cc [a] (fn [_] (c a)))
+          rc (f cc)]
+      (rc c))))

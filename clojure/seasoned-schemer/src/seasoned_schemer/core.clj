@@ -1,5 +1,5 @@
 (ns seasoned-schemer.core
-  (:use [seasoned-schemer.macros])
+  (:use [seasoned-schemer.helpers])
   (:gen-class))
 
 ;;; --------------------------------------------------- ;;;
@@ -279,14 +279,19 @@
 
 
 ;; protected version of scramble using Clojure's fn special form
-(defn scramble2 [tup])
-;; TODO: must finish!
+(defn scramble2 [tup]
+  ((fn scramble2-b [tup rev-pre]
+     (if (empty? tup)
+       []
+       (let [new-rev-pre (cons (first tup) rev-pre)]
+         (cons (pick (first tup) new-rev-pre)
+               (scramble2-b (rest tup) new-rev-pre)))))
+   tup [])
+  )
 
 ;;; --------------------------------------------------- ;;;
 ;;; -----------------[ Chapter 13 ] ------------------- ;;;
 ;;; --------------------------------------------------- ;;;
-
-;; TODO: skipped a lot of functions here
 
 ;; doing this only in idiomatic clojure with loop/recur
 (defn intersect [set1 set2]
@@ -333,8 +338,13 @@
   )
 
 ;; TODO: not sure how to do letcc in Clojure ...
+;; There is a call-cc function in clojure-contrib.monads, but I'm not sure
+;; how to use it, as I can't find much documentation or any examples of using it
+;; There is also a delimited continuations (like "yield" in Ruby) library from
+;; swannodette, but the documentation is a little sparse to quickly figure out
+;; how to use it in this "letcc" context: https://github.com/swannodette/delimc
 (defn rember-upto-last [a lat]
-  
+  ;; (call-cc ??)
   )
 
 ;; turns out to be very easy with Clojure loop/recur
@@ -356,8 +366,6 @@
 (defn atom? [x]
   (not (coll? x)))
 
-;; since the arg list to leftmost is the same as what we need to recur
-;; on, we don't need the loop binding, just use recur directly
 (defn leftmost [l]
   (cond
    (empty? l) []
@@ -365,7 +373,34 @@
    :else (let [r (leftmost (first l))]
            (if (atom? r)
              r
-             (leftmost (rest l)))
+             (leftmost (rest l))))))
+
+;; since the arg list to leftmost is the same as what we need to recur
+;; on, we don't need the loop binding, just use recur directly
+;; TODO: - this is only a partially recur-based solution; one part requires
+;; true recursion - how else solve this without true recursion??
+(defn leftmost-recur [l]
+  (cond
+   (empty? l) []
+   (atom? (first l)) (first l)
+   :else (let [r (leftmost-recur (first l))]
+           (if (atom? r)
+             r
+             (recur (rest l)))
            )
    )
   )
+
+(defn leftmost-recur-memoize [l]
+  (let [memo-leftmost (memoize leftmost-recur-memoize)]
+    (cond
+     (empty? l) []
+     (atom? (first l)) (first l)
+     :else (let [r (memo-leftmost (first l))]
+             (if (atom? r)
+               r
+               (recur (rest l)))
+             )
+     )))
+
+

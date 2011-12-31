@@ -138,6 +138,12 @@
   (is (= []             (sum-of-prefixes2-with-fn [])))
   )
 
+(deftest test-scramble2
+  (is (= [1 1 1 1 1 4 1 1 1 9]   (scramble2 [1 1 1 3 4 2 1 1 9 2])))
+  (is (= [1 1 1 1 1 1 1 1 1]     (scramble2 [1 2 3 4 5 6 7 8 9])))
+  (is (= [1 1 1 1 1 1 1 1 2 8 2] (scramble2 [1 2 3 1 2 3 4 1 8 2 10])))
+  )
+
 ;;; --------------------------------------------------- ;;;
 ;;; -----------------[ Chapter 13 ] ------------------- ;;;
 ;;; --------------------------------------------------- ;;;
@@ -190,7 +196,27 @@
   (is (= :a (leftmost [:a :b [:c :d]])))
   (is (= :a (leftmost [[:a :b] [:c :d]])))
   (is (= :a (leftmost [[] [] [[:a]] :b [:c :d]])))
+  (is (= [] (leftmost-recur [[] [['()]]])))
+  (is (= [] (leftmost-recur []))))
+
+(deftest test-leftmost-recur
+  (is (= :a (leftmost-recur [:a :b [:c :d]])))
+  (is (= :a (leftmost-recur [[:a :b] [:c :d]])))
+  (is (= :a (leftmost-recur [[] [] [[:a]] :b [:c :d]])))
+  (is (= [] (leftmost-recur [[] [['()]]])))
+  (is (= [] (leftmost-recur [])))
   )
+
+(deftest test-leftmost-recur-memoize
+  (is (= :a (leftmost-recur-memoize [:a :b [:c :d]])))
+  (is (= :a (leftmost-recur-memoize [[:a :b] [:c :d]])))
+  (is (= :a (leftmost-recur-memoize [[] [] [[:a]] :b [:c :d]])))
+  (is (= :a (leftmost-recur-memoize [[] [] [[:a]] :b [:c :d]])))
+  (is (= [] (leftmost-recur-memoize [[] [['()]]])))
+  (is (= [] (leftmost-recur-memoize [])))
+  )
+
+
 
 ;; helper func to quickly run all tests from the REPL
 (defn rt []
