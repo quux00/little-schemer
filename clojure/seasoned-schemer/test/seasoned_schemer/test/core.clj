@@ -216,6 +216,55 @@
   (is (= [] (leftmost-recur-memoize [])))
   )
 
+(deftest test-leftmost-with-flaten
+  (is (= :a (leftmost-with-flatten [:a :b [:c :d]])))
+  (is (= :a (leftmost-with-flatten [[:a :b] [:c :d]])))
+  (is (= :a (leftmost-with-flatten [[] [] [[:a]] :b [:c :d]])))
+  (is (= :a (leftmost-with-flatten [[] [] [[:a]] :b [:c :d]])))
+  (is (= [] (leftmost-with-flatten [[] [['()]]])))
+  (is (= [] (leftmost-with-flatten [])))
+  )
+
+(deftest test-rember1*
+  (is (= [1 2 3 4]
+           (rember1* :na [1 2 3 4])))
+  (is (= [1 3 4]
+           (rember1* 2 [1 2 3 4])))
+  (is (= [1 [3] 4]
+           (rember1* 2 [1 [2 3] 4])))
+  (is (= [1 [:a :b] [3] 4]
+           (rember1* 2 [1 [:a :b] [2 3] 4])))
+  (is (= [1 [:a :b] [2 3] 4]
+           (rember1* 2 [1 2 [:a :b] [2 3] 4])))
+  (is (= [1 [[:a :b]] [[3]] 4]
+           (rember1* 2 [1 [[:a :b]] [[2 3]] 4])))
+  (is (= [[:pasta] :pasta [:noodles :meat :sauce] :meat :tomatoes]
+           (rember1* :meat [[:pasta :meat] :pasta [:noodles :meat :sauce] :meat :tomatoes])))
+  (is (= [[:S :r] :F [:m :t] :s]
+           (rember1* :s [[:S :r] :F [:m :s :t] :s])))
+  )
+
+(deftest test-rember1*-recur
+  (is (= [1 2 3 4]
+           (rember1*-recur :na [1 2 3 4])))
+  (is (= [1 3 4]
+           (rember1*-recur 2 [1 2 3 4])))
+  (is (= [1 [3] 4]
+           (rember1*-recur 2 [1 [2 3] 4])))
+
+  ;; (is (= [1 [:a :b] [3] 4]
+  ;;          (rember1* 2 [1 [:a :b] [2 3] 4])))
+  ;; (is (= [1 [:a :b] [2 3] 4]
+  ;;          (rember1* 2 [1 2 [:a :b] [2 3] 4])))
+  ;; (is (= [1 [[:a :b]] [[3]] 4]
+  ;;          (rember1* 2 [1 [[:a :b]] [[2 3]] 4])))
+
+  ;; (is (= [[:pasta] :pasta [:noodles :meat :sauce] :meat :tomatoes]
+  ;;          (rember1*-recur :meat [[:pasta :meat] :pasta [:noodles :meat :sauce] :meat :tomatoes])))
+  ;; (is (= [[:S :r] :F [:m :t] :s]
+  ;;          (rember1*-recur :s [[:S :r] :F [:m :s :t] :s])))
+  )
+
 
 
 ;; helper func to quickly run all tests from the REPL

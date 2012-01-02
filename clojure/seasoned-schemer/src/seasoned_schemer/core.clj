@@ -377,8 +377,8 @@
 
 ;; since the arg list to leftmost is the same as what we need to recur
 ;; on, we don't need the loop binding, just use recur directly
-;; TODO: - this is only a partially recur-based solution; one part requires
-;; true recursion - how else solve this without true recursion??
+;; but this is only a partially recur-based solution; one part requires
+;; true recursion
 (defn leftmost-recur [l]
   (cond
    (empty? l) []
@@ -391,6 +391,8 @@
    )
   )
 
+;; this does not achieve what it hoped to (try with benchmarks)
+;; need to research: http://stackoverflow.com/questions/3906831/how-do-i-generate-memoized-recursive-functions-in-clojure
 (defn leftmost-recur-memoize [l]
   (let [memo-leftmost (memoize leftmost-recur-memoize)]
     (cond
@@ -404,3 +406,44 @@
      )))
 
 
+;; most idiomatic way to do this in Clojure - based on feedback
+;; to my question on stackoverflow:
+;;   http://stackoverflow.com/questions/8690675/caching-the-value-of-a-recursive-call-in-clojure-using-recur
+;; this will be less performant for large lists/sequences, since it has to go through
+;; all the elements, rather than just enough to get the first "atom"
+(defn leftmost-with-flatten [l]
+  ;; first return nil from an empty list, but this
+  ;; spec wants empty list so make that the backup return val
+  (or (first (flatten l)) [])
+  )
+
+
+
+(defn rember1*
+  "Removes the first instance of +a+ found in list l, even when it
+   it is embedded in a sublist of l"
+  [a l]
+  ((fn R [ls]
+     (cond
+      (empty? ls) []
+      ;; TODO: I think this atom? check can be moved down to the else clause
+      ;;       which may save an extra recurse expression here ... TBD
+      (atom? (first ls)) (if (= a (first ls))
+                          (rest ls)
+                          (cons (first ls) (R (rest ls))))
+      :else (if (= (first ls) (R (first ls)))
+              (cons (first ls) (R (rest ls)))
+              (cons (R (first ls)) (rest ls)))
+      )
+     ) l)
+  )
+  
+(defn rember1*-recur [a l]
+  (loop [ls l accvec []]
+    (cond
+     (empty? ls) accvec
+     (= a (first ls)) (into accvec (rest ls))  ; return right here
+     :else (recur (rest ls) (conj accvec (first ls)))
+     )
+    )
+  )
