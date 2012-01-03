@@ -211,7 +211,7 @@
   (is (= :a (leftmost-recur-memoize [:a :b [:c :d]])))
   (is (= :a (leftmost-recur-memoize [[:a :b] [:c :d]])))
   (is (= :a (leftmost-recur-memoize [[] [] [[:a]] :b [:c :d]])))
-  (is (= :a (leftmost-recur-memoize [[] [] [[:a]] :b [:c :d]])))
+  (is (= :a (leftmost-recur-memoize [[] [] [[[:a :55]]] :b [:c :d]])))
   (is (= [] (leftmost-recur-memoize [[] [['()]]])))
   (is (= [] (leftmost-recur-memoize [])))
   )
@@ -244,6 +244,25 @@
            (rember1* :s [[:S :r] :F [:m :s :t] :s])))
   )
 
+(deftest test-rember1*-alt
+  (is (= [1 2 3 4]
+           (rember1*-alt :na [1 2 3 4])))
+  (is (= [1 3 4]
+           (rember1*-alt 2 [1 2 3 4])))
+  (is (= [1 [3] 4]
+           (rember1*-alt 2 [1 [2 3] 4])))
+  (is (= [1 [:a :b] [3] 4]
+           (rember1*-alt 2 [1 [:a :b] [2 3] 4])))
+  (is (= [1 [:a :b] [2 3] 4]
+           (rember1*-alt 2 [1 2 [:a :b] [2 3] 4])))
+  (is (= [1 [[:a :b]] [[3]] 4]
+           (rember1*-alt 2 [1 [[:a :b]] [[2 3]] 4])))
+  (is (= [[:pasta] :pasta [:noodles :meat :sauce] :meat :tomatoes]
+           (rember1*-alt :meat [[:pasta :meat] :pasta [:noodles :meat :sauce] :meat :tomatoes])))
+  (is (= [[:S :r] :F [:m :t] :s]
+           (rember1*-alt :s [[:S :r] :F [:m :s :t] :s])))
+  )
+
 (deftest test-rember1*-recur
   (is (= [1 2 3 4]
            (rember1*-recur :na [1 2 3 4])))
@@ -252,19 +271,54 @@
   (is (= [1 [3] 4]
            (rember1*-recur 2 [1 [2 3] 4])))
 
-  ;; (is (= [1 [:a :b] [3] 4]
-  ;;          (rember1* 2 [1 [:a :b] [2 3] 4])))
-  ;; (is (= [1 [:a :b] [2 3] 4]
-  ;;          (rember1* 2 [1 2 [:a :b] [2 3] 4])))
-  ;; (is (= [1 [[:a :b]] [[3]] 4]
-  ;;          (rember1* 2 [1 [[:a :b]] [[2 3]] 4])))
+  (is (= [1 [:a :b] [3] 4]
+           (rember1*-recur 2 [1 [:a :b] [2 3] 4])))
+  (is (= [1 [:a :b] [2 3] 4]
+           (rember1*-recur 2 [1 2 [:a :b] [2 3] 4])))
+  (is (= [1 [[:a :b]] [[3]] 4]
+           (rember1*-recur 2 [1 [[:a :b]] [[2 3]] 4])))
 
-  ;; (is (= [[:pasta] :pasta [:noodles :meat :sauce] :meat :tomatoes]
-  ;;          (rember1*-recur :meat [[:pasta :meat] :pasta [:noodles :meat :sauce] :meat :tomatoes])))
-  ;; (is (= [[:S :r] :F [:m :t] :s]
-  ;;          (rember1*-recur :s [[:S :r] :F [:m :s :t] :s])))
+  (is (= [[:pasta] :pasta [:noodles :meat :sauce] :meat :tomatoes]
+           (rember1*-recur :meat [[:pasta :meat] :pasta [:noodles :meat :sauce] :meat :tomatoes])))
+  (is (= [[:S :r] :F [:m :t] :s]
+           (rember1*-recur :s [[:S :r] :F [:m :s :t] :s])))
   )
 
+(deftest test-depth*
+  (is (= 1 (depth* [])))
+  (is (= 1 (depth* [1 2 3 4])))
+  (is (= 2 (depth* [1 [2 3] 4])))
+  (is (= 2 (depth* [1 [2 3] 4 [:a :b] 5])))
+  (is (= 3 (depth* [1 [2 3] 4 [:a [:b :c]]])))
+  (is (= 3 (depth* [1 [2 3 [:x]] 4 [:a :b] 5])))
+  (is (= 4 (depth* [[ [:bitter :butter]
+                      [:makes]
+                      [:batter [:bitter]]]
+                    :butter]
+                   )))  
+  (is (= 4 (depth* '(() ((:bitter :butter)
+                         (:makes)
+                         (:batter (:bitter)))
+                     :butter))))
+  )
+
+(deftest test-depth*-recur
+  (is (= 1 (depth*-recur [])))
+  (is (= 1 (depth*-recur [1 2 3 4])))
+  (is (= 2 (depth*-recur [1 [2 3] 4])))
+  (is (= 2 (depth*-recur [1 [2 3] 4 [:a :b] 5])))
+  (is (= 3 (depth*-recur [1 [2 3] 4 [:a [:b :c]]])))
+  (is (= 3 (depth*-recur [1 [2 3 [:x]] 4 [:a :b] 5])))
+  (is (= 4 (depth*-recur [[ [:bitter :butter]
+                      [:makes]
+                      [:batter [:bitter]]]
+                    :butter]
+                   )))  
+  (is (= 4 (depth*-recur '(() ((:bitter :butter)
+                         (:makes)
+                         (:batter (:bitter)))
+                     :butter))))
+  )
 
 
 ;; helper func to quickly run all tests from the REPL

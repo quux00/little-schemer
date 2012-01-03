@@ -386,12 +386,9 @@
    :else (let [r (leftmost-recur (first l))]
            (if (atom? r)
              r
-             (recur (rest l)))
-           )
-   )
-  )
+             (recur (rest l))))))
 
-;; this does not achieve what it hoped to (try with benchmarks)
+;; this does not achieve what it hoped to (I tried it with benchmarks)
 ;; need to research: http://stackoverflow.com/questions/3906831/how-do-i-generate-memoized-recursive-functions-in-clojure
 (defn leftmost-recur-memoize [l]
   (let [memo-leftmost (memoize leftmost-recur-memoize)]
@@ -402,9 +399,20 @@
              (if (atom? r)
                r
                (recur (rest l)))
-             )
-     )))
+             ))))
 
+
+;; (def leftmost-recur-memoize444
+;;      (memoize
+;;       (fn [l]
+;;         (Thread/sleep 100)
+;;         (cond
+;;          (empty? l) []
+;;          (atom? (first l)) (first l)
+;;          :else (let [r (leftmost-recur-memoize444 (first l))]
+;;                  (if (atom? r)
+;;                    r
+;;                    (recur (rest l))))))))
 
 ;; most idiomatic way to do this in Clojure - based on feedback
 ;; to my question on stackoverflow:
@@ -418,32 +426,91 @@
   )
 
 
-
+;; this one matches the book
 (defn rember1*
+  "Removes the first instance of +a+ found in list l, even when it
+     it is embedded in a sublist of l"
+  [a l]
+  ((fn R [ls]
+     (cond
+      (empty? ls) []
+      (= a (first ls)) (rest ls)
+      (atom? (first ls)) (cons (first ls) (R (rest ls)))
+      :else (let [sv (R (first ls))]
+              (if (= (first ls) sv)
+                (cons (first ls) (R (rest ls)))
+                (cons sv (rest ls)))))
+       ) l)
+    )
+
+;; this is an alternative way to do an optimization to the true recursive
+;; version without having to do a let statement - this works in Clojure bcs
+;; the '=' function is generic - it works on "atoms" and lists/colls. That
+;; is apparently not the case in Scheme and CL, so they have to distinguish
+;; first and use eq? or eqlist? depending on the type
+(defn rember1*-alt
   "Removes the first instance of +a+ found in list l, even when it
    it is embedded in a sublist of l"
   [a l]
   ((fn R [ls]
      (cond
       (empty? ls) []
-      ;; TODO: I think this atom? check can be moved down to the else clause
-      ;;       which may save an extra recurse expression here ... TBD
-      (atom? (first ls)) (if (= a (first ls))
-                          (rest ls)
-                          (cons (first ls) (R (rest ls))))
-      :else (if (= (first ls) (R (first ls)))
-              (cons (first ls) (R (rest ls)))
-              (cons (R (first ls)) (rest ls)))
-      )
+      (= a (first ls)) (rest ls)
+      (or (atom? (first ls))
+          (let [sv (R (first ls))]
+            (= (first ls) sv)))     (cons (first ls) (R (rest ls)))
+      :else (cons (R (first ls)) (rest ls)))
      ) l)
   )
-  
+
+;; only recurs within a level or depth - still does true recursion into
+;; sub-collections, bcs I haven't grokked how to do that iteratively (with
+;; pseudo-recursion) yet
 (defn rember1*-recur [a l]
   (loop [ls l accvec []]
     (cond
      (empty? ls) accvec
      (= a (first ls)) (into accvec (rest ls))  ; return right here
-     :else (recur (rest ls) (conj accvec (first ls)))
-     )
+     (atom? (first ls)) (recur (rest ls) (conj accvec (first ls)))
+     :else (let [sv (rember1*-recur a (first ls))]
+             (if (= sv (first ls))
+               (recur (rest ls) (conj accvec sv)) ;; didn't find +a+ in the sub-list
+               (into (conj accvec sv) (rest ls))  ;; found it - so stop recurring
+               )))
     )
   )
+
+
+(defn depth*
+  "Computes the depth of a nested collection - an empty collection has
+   depth=1 and each additional nested collection increments the depth"
+  [l]
+  (cond
+   (empty? l) 1
+   (atom? (first l)) (depth* (rest l))
+   :else (max (inc (depth* (first l)))
+              (depth* (rest l)))
+   )
+  )
+
+;; There doesn't seem to be a way to do this iteratively.
+;; Even Clojure's flatten (via tree-seq) is truly recursive
+;; since most data structures will not be so deep as to blow
+;; the stack
+;; TODO: - can we push depths onto a stack and then
+;; run the through stack to find the max?
+;; TODO: - does lazy-seq help here? Is it the Clojure way
+;; to solve this?
+(defn depth*-recur [l]
+  (cond
+   (empty? l) 1
+   (atom? (first l)) (recur (rest l))
+   :else (max (inc (depth*-recur (first l)))
+              (depth*-recur (rest l)))
+   )
+  )
+
+;; skipped the remainer of ch. 14, since it is all about using
+;; letcc (call/cc?) in various ways, and I'm not sure how to use
+;; that in Clojure yet
+
