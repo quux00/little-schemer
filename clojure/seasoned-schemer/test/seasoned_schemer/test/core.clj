@@ -321,6 +321,71 @@
   )
 
 
+;;; --------------------------------------------------- ;;;
+;;; -----------------[ Chapter 15 ] ------------------- ;;;
+;;; --------------------------------------------------- ;;;
+
+(deftest test-gourmet
+  (is (= [:onion :skins] (gourmet :onion)))
+  )
+
+(deftest test-gourmand
+  (is (= [:potato :potato] (gourmand :potato)))
+  (is (= [:rice :rice] (gourmand :rice)))
+  )
+
+(deftest test-omnivore
+  (is (= [:rice :rice] (omnivore :rice))))
+
+(deftest test-omnivore-1
+  (is (= [:rice :rice] (omnivore-1 :rice))))
+
+
+
+;;; --------------------------------------------------- ;;;
+;;; -----------------[ Chapter 16 ] ------------------- ;;;
+;;; --------------------------------------------------- ;;;
+
+(deftest test-deepM
+  (is (= '("pizza") (deepM 1)))
+  (is (= nil (get (getN2R) 0)))
+  (is (= '("pizza") (get (getN2R) 1)))
+  (is (= '([[[[[["pizza"]]]]]]) (deepM 7)))
+  (is (= nil (get (getN2R) 0)))
+  (is (= '("pizza") (get (getN2R) 1)))
+  (is (nil? (get (getN2R) 2)))
+  (is (= '([[[[[["pizza"]]]]]]) (get (getN2R) 7)))
+  )
+
+
+(deftest test-deep-with-external-memoize
+  (is (= '("pizza") (deep-with-external-memoize 1)))
+  (is (= "pizza" (get (getN2R) 0)))
+  (is (= '("pizza") (get (getN2R) 1)))
+  
+  (is (= '([[[[[["pizza"]]]]]]) (deep-with-external-memoize 7)))
+  (is (= "pizza" (get (getN2R) 0)))
+  (is (= '("pizza") (get (getN2R) 1)))
+  (is (= '(("pizza")) (get (getN2R) 2)))
+  (is (= '([[[[["pizza"]]]]]) (get (getN2R) 6)))
+  (is (= '([[[[[["pizza"]]]]]]) (get (getN2R) 7)))
+  )
+
+
+(deftest test-deep-idiomatic-clj
+  (is (= '("pizza") (deep-with-external-memoize 1)))
+  (is (= '([[[[[["pizza"]]]]]]) (deep-with-external-memoize 7)))
+  (is (= [["pizza"]] (deep-with-external-memoize 2)))
+  )
+
+
+(deftest test-sslength
+  (is (= 0 (sslength [])))
+  (is (= 3 (sslength [:a :b :c])))
+  (is (= 4 (sslength [:a [:b :c [:d] :e [:f]] :g :h])))
+  )
+
+
 ;; helper func to quickly run all tests from the REPL
 (defn rt []
   (use 'seasoned-schemer.test.core :reload-all)

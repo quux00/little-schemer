@@ -227,8 +227,8 @@
           (U set1))
   )
 
-;; Clojure provides the fn special form that optionally takes a name,
-;; allowing you to use that name in recursive calls, thus avoiding 
+;; Clojure provides the fn special form that optionally takes a name
+;; allowing you to use that name in recursive calls, thus avoiding
 ;; the need for Lisp's letrec to do self-reference/self-recursion
 (defn union-with-fn [set1 set2]
   ((fn UU [set1]
@@ -514,3 +514,103 @@
 ;; letcc (call/cc?) in various ways, and I'm not sure how to use
 ;; that in Clojure yet
 
+
+;;; --------------------------------------------------- ;;;
+;;; -----------------[ Chapter 15 ] ------------------- ;;;
+;;; --------------------------------------------------- ;;;
+
+(def x (atom [:chicago :pizza]))
+(reset! x :skins)
+
+(defn gourmet [food]
+  (cons food (cons @x [])))
+
+(defn gourmand [food]
+  (reset! x food)
+  (cons food (cons @x [])))
+
+;; pp.95-100 shows how they define local variables in the scope
+;; of the defined functions - and then use set! to modify those
+;; based on the args passed in.
+
+;; Clojure can do let-over-lambda
+;; http://stackoverflow.com/questions/3306779/let-over-lambda-block-scanner-in-clojure
+(defn omnivore [food]
+  (let [x (atom "minestrone")]
+    ((fn []
+      (reset! x food)
+      (cons food (cons @x []))))))
+
+;; another way to do let-over-lambda - use def, not defn
+;; this is closer to the Scheme way of doing it
+(def omnivore-1
+  (let [x (atom "minestrone")]
+    (fn [food]
+      (reset! x food)
+      (cons food (cons @x [])))))
+
+
+;;; --------------------------------------------------- ;;;
+;;; -----------------[ Chapter 16 ] ------------------- ;;;
+;;; --------------------------------------------------- ;;;
+
+;; I chose not to use two lists, one for numbers (Ns) and one
+;; for real values (Rs), but rather use a map, as God intended
+(def N2R (atom {}))
+
+(defn getN2R [] @N2R)
+
+(defn deep
+  "Embeds the word 'pizza' in a nested list +n+ deep"
+  [n]
+  (if (= 0 n)
+    "pizza"
+    (cons (deep (dec n)) '()))
+  )
+
+(defn deep-with-external-memoize
+  "Embeds the word 'pizza' in a nested list +n+ deep"
+  [n]
+  (if (= 0 n)
+    (let [R "pizza"]
+      (reset! N2R (assoc @N2R n R))
+      R)
+    (let [R (cons (deep-with-external-memoize (dec n)) '())]
+      (reset! N2R (assoc @N2R n R))
+      R)))
+
+;; I changed to name to avoid conflict with clojure.core/find
+(defn find-memoized [n map] (get map n))
+
+(defn deepM [n]
+  (let [R (find-memoized n @N2R)]
+    (if R
+      R
+      (let [R (deep n)]
+        ;; TODO: may be better to swap or compare-and-set rather than reset??
+        (reset! N2R (assoc @N2R n R))
+        R))))
+
+;; non-memoized version
+(defn deep-idiomatic-clj [n]
+  (reduce (fn [& xs] (conj [] (first xs))) "pizza" (range n))
+  )
+
+;; now try the let-over-lambda version in Clojure (deepM p. 116)
+
+
+
+
+;; changed name to avoid conflict with clojure.core/length
+(defn sslength [l]
+  (if (empty? l)
+    0
+    (inc (sslength (rest l))))
+  )
+
+(def sslength2
+     (fn h ))
+
+;; Y-combinator in Clojure: http://www.gettingclojure.com/cookbook:functional-programming
+;; (defn Y! [f]
+;;   (fn h [f] ))
