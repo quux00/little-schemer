@@ -346,15 +346,38 @@
 ;;; -----------------[ Chapter 16 ] ------------------- ;;;
 ;;; --------------------------------------------------- ;;;
 
+(deftest test-deepM-1
+  (is (= '("pizza") (deepM-1 1)))
+  (is (= "pizza" (get (getN2R) 0)))
+  (is (= '("pizza") (get (getN2R) 1)))
+  (is (= '([[[[[["pizza"]]]]]]) (deepM-1 7)))
+  (is (= "pizza" (get (getN2R) 0)))
+  (is (= '("pizza") (get (getN2R) 1)))
+  (is (= '(["pizza"]) (get (getN2R) 2)))
+  (is (= '([[[[[["pizza"]]]]]]) (get (getN2R) 7)))
+  )
+
+
 (deftest test-deepM
   (is (= '("pizza") (deepM 1)))
-  (is (= nil (get (getN2R) 0)))
-  (is (= '("pizza") (get (getN2R) 1)))
   (is (= '([[[[[["pizza"]]]]]]) (deepM 7)))
-  (is (= nil (get (getN2R) 0)))
-  (is (= '("pizza") (get (getN2R) 1)))
-  (is (nil? (get (getN2R) 2)))
-  (is (= '([[[[[["pizza"]]]]]]) (get (getN2R) 7)))
+  )
+
+
+(deftest test-deepM-2
+  (is (= '("pizza") (deepM-2 1)))
+  (is (= '([[[[[["pizza"]]]]]]) (deepM-2 7)))
+  )
+
+
+(deftest test-deepM-3
+  (is (= '(["pizza"]) (deepM-3 2)))
+  (is (= '([[[[[[["pizza"]]]]]]]) (deepM-3 8)))
+  )
+
+(deftest test-deepM-4
+  (is (= '(["pizza"]) (deepM-4 2)))
+  (is (= '([[[[[[[["pizza"]]]]]]]]) (deepM-4 9)))
   )
 
 
@@ -379,10 +402,55 @@
   )
 
 
+(deftest test-sslength-orig
+  (is (= 0 (sslength-orig [])))
+  (is (= 3 (sslength-orig [:a :b :c])))
+  (is (= 4 (sslength-orig [:a [:b :c [:d] :e [:f]] :g :h])))
+  )
+
 (deftest test-sslength
   (is (= 0 (sslength [])))
+  (is (= 1 (sslength [:a])))
   (is (= 3 (sslength [:a :b :c])))
   (is (= 4 (sslength [:a [:b :c [:d] :e [:f]] :g :h])))
+  )
+
+(deftest test-sslength2
+  (is (= 0 (sslength2 [])))
+  (is (= 1 (sslength2 [:a])))
+  (is (= 3 (sslength2 [:a :b :c])))
+  (is (= 4 (sslength2 [:a [:b :c [:d] :e [:f]] :g :h])))
+  )
+
+(deftest test-sslength3
+  (is (= 0 (sslength3 [])))
+  (is (= 1 (sslength3 [:a])))
+  (is (= 3 (sslength3 [:a :b :c])))
+  (is (= 4 (sslength3 [:a [:b :c [:d] :e [:f]] :g :h])))
+  )
+
+(deftest test-Ydepth*
+  (is (= 1 (Ydepth* [])))
+  (is (= 1 (Ydepth* [1 2 3 4])))
+  (is (= 2 (Ydepth* [1 [2 3] 4])))
+  (is (= 2 (Ydepth* [1 [2 3] 4 [:a :b] 5])))
+  (is (= 3 (Ydepth* [1 [2 3] 4 [:a [:b :c]]])))
+  (is (= 3 (Ydepth* [1 [2 3 [:x]] 4 [:a :b] 5])))
+  (is (= 4 (Ydepth* [[ [:bitter :butter]
+                       [:makes]
+                       [:batter [:bitter]]]
+                     :butter]
+                    )))  
+  (is (= 4 (Ydepth* '(() ((:bitter :butter)
+                          (:makes)
+                          (:batter (:bitter)))
+                      :butter))))
+  )
+
+;; if you do ((Y! biz) 5) you will get an infinite loop
+;; that contintually returns a function
+(deftest Ybiz
+  (is (= 0 ((Y biz) 5)))
   )
 
 
@@ -390,6 +458,7 @@
 (defn rt []
   (use 'seasoned-schemer.test.core :reload-all)
   (use 'seasoned-schemer.core :reload-all)
+  (load-file "src/seasoned_schemer/core.clj")
   (load-file "test/seasoned_schemer/test/core.clj")
   (run-tests 'seasoned-schemer.test.core))
 

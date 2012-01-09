@@ -563,7 +563,7 @@
 (defn deep
   "Embeds the word 'pizza' in a nested list +n+ deep"
   [n]
-  (if (= 0 n)
+    (if (= 0 n)
     "pizza"
     (cons (deep (dec n)) '()))
   )
@@ -582,11 +582,21 @@
 ;; I changed to name to avoid conflict with clojure.core/find
 (defn find-memoized [n map] (get map n))
 
-(defn deepM [n]
+(declare deepM-1)
+
+(defn deep-knows-deepM-1
+  "Embeds the word 'pizza' in a nested list +n+ deep"
+  [n]
+  (if (= 0 n)
+    "pizza"
+    (cons (deepM-1 (dec n)) '()))
+  )
+
+(defn deepM-1 [n]
   (let [R (find-memoized n @N2R)]
     (if R
       R
-      (let [R (deep n)]
+      (let [R (deep-knows-deepM-1 n)]
         ;; TODO: may be better to swap or compare-and-set rather than reset??
         (reset! N2R (assoc @N2R n R))
         R))))
@@ -596,21 +606,157 @@
   (reduce (fn [& xs] (conj [] (first xs))) "pizza" (range n))
   )
 
-;; now try the let-over-lambda version in Clojure (deepM p. 116)
+;;now try the let-over-lambda version in Clojure (deepM p. 116)
+(def deepM
+  (let [n2r (atom {})]  ;; memoizes numbers to outputs
+    (fn loc-deep [n]
+      (let [mem (get @n2r n nil)]
+        (if mem
+          mem
+          (let [ans (if (= 0 n)
+                      "pizza"
+                      (cons (loc-deep (dec n)) []))]
+            (reset! n2r (assoc @n2r n ans))
+            ans))))))
+
+;; this one only memoizes the final answer, not all the answers in between
+;; as we need to have loc-deep call the outer "main" function in deepM-2
+;; have to use letfn to make mutually recursive calls
+(def deepM-2
+  (let [n2r       (atom {})
+        loc-deep  (fn ldeep [n1]
+                    (if (= 0 n1)
+                      "pizza"
+                      (cons (ldeep (dec n1)) '()))) ]
+    (fn [n]
+      (let [mem (get @n2r n nil)]
+        (if mem
+          mem
+          (let [ans (loc-deep n)]
+            (reset! n2r (assoc @n2r n ans))
+            ans))))))
+
+;; TODO: right now I'm making these all def's, not defn's, but
+;;       the stackoverflow answer used defn - need to try that out later
+;; use letfn to make mutually recursive sub-functions
+(def deepM-3
+  (let [n2r (atom {})]
+    (letfn [(loc-deep [n1]
+              ;; (Thread/sleep 88)
+              (if (= 0 n1)
+                "pizza"
+                (cons (loc-deepM (dec n1)) '())))
+            
+            (loc-deepM [n]
+              (let [mem (get @n2r n nil)]
+                (if mem
+                  mem
+                  (let [ans (loc-deep n)]
+                    (reset! n2r (assoc @n2r n ans))
+                    ans)))) ]
+      loc-deepM)))
+
+;; this version works in terms of returning the right answer
+;; but it never memoizes the results between calls, bcs each
+;; time deepM-4 is clled it recreates the data stuctures in it
+;; => this is the reason The Seasoned Schemer "17th Commandment"
+;;    says to only use let and set! when there is a lambda between
+;;    them - if the let occurs within the lambda (function def)
+;;    it gets recreated each time the function is called, destroying
+;;    any memoization you were trying to do.
+(defn deepM-4 [n]
+  (let [n2r (atom {})]
+    (letfn [(loc-deep [n1]
+              ;; (Thread/sleep 88)
+              (if (= 0 n1)
+                "pizza"
+                (cons (loc-deepM (dec n1)) '())))
+
+            (loc-deepM [i]
+              (let [mem (get @n2r i nil)]
+                (if mem
+                  mem
+                  (let [ans (loc-deep i)]
+                    (reset! n2r (assoc @n2r i ans))
+                    ans)))) ]
+      (loc-deepM n))))
 
 
-
+;; Now we start down the path of Y!,
+;; the applicative order Y combinator
 
 ;; changed name to avoid conflict with clojure.core/length
-(defn sslength [l]
+(defn sslength-orig [l]
   (if (empty? l)
     0
-    (inc (sslength (rest l))))
+    (inc (sslength-orig (rest l))))
   )
 
-(def sslength2
-     (fn h ))
+(def sslength
+  (let [h (atom (fn [l] 0))]
+    ;; I didn't explicitly return h, because reset! does that in Clojure
+    (reset! h (fn [l]
+                (if (empty? l)
+                  0
+                  (inc (@h (rest l))))))))
 
-;; Y-combinator in Clojure: http://www.gettingclojure.com/cookbook:functional-programming
-;; (defn Y! [f]
-;;   (fn h [f] ))
+;; defn function that takes the length func as an arg
+;; and returns a function that calcs length (and is the
+;; one that needs to be passed to this function L)
+(defn L [length]
+  (fn [l]
+    (if (empty? l)
+      0
+      (inc (length (rest l))))))
+
+(def sslength2
+  (let [h (atom (fn [l] 0))]
+    ;; (reset! h (L @h))
+    (reset! h (L (fn [arg] (@h arg))))))
+
+(defn Y! [L]
+  (let [h (atom (fn [l] nil))]
+    (reset! h (L (fn [arg] (@h arg))))))
+
+;; final version of length using applicative order
+;; imperative Y-combinator
+(def sslength3 (Y! L))
+
+(comment
+  (defn depth*
+    "Computes the depth of a nested collection - an empty collection has
+   depth=1 and each additional nested collection increments the depth"
+    [l]
+    (cond
+     (empty? l) 1
+     (atom? (first l)) (depth* (rest l))
+     :else (max (inc (depth* (first l)))
+                (depth* (rest l)))))
+  )
+(defn D [depth*]
+  (fn [l]
+    (cond
+     (empty? l) 1
+     (atom? (first l)) (depth* (rest l))
+     :else (max (inc (depth* (first l)))
+                (depth* (rest l)))
+     )
+    )
+  )
+
+(def Ydepth* (Y! D))
+
+(def Y
+  (fn [r]
+    ((fn [f] (f f)) 
+     (fn [Y]
+       (r (fn [x] ((Y Y) x)))))))
+
+(def biz
+  (let [x (atom 0)]
+    (fn [f]
+      (reset! x (inc @x))
+      (fn [a]
+        (if (= a @x)
+          0
+          (f a))))))
