@@ -437,7 +437,7 @@
       (= a (first ls)) (rest ls)
       (atom? (first ls)) (cons (first ls) (R (rest ls)))
       :else (let [sv (R (first ls))]
-              (if (= (first ls) sv)
+              (if (= (first ls) sv) ;; if matches, then +a+ wasn't found and removed yet
                 (cons (first ls) (R (rest ls)))
                 (cons sv (rest ls)))))
        ) l)
@@ -636,13 +636,10 @@
             (reset! n2r (assoc @n2r n ans))
             ans))))))
 
-;; TODO: right now I'm making these all def's, not defn's, but
-;;       the stackoverflow answer used defn - need to try that out later
 ;; use letfn to make mutually recursive sub-functions
 (def deepM-3
   (let [n2r (atom {})]
     (letfn [(loc-deep [n1]
-              ;; (Thread/sleep 88)
               (if (= 0 n1)
                 "pizza"
                 (cons (loc-deepM (dec n1)) '())))
@@ -657,7 +654,7 @@
       loc-deepM)))
 
 ;; this version works in terms of returning the right answer
-;; but it never memoizes the results between calls, bcs each
+;; but IT NEVER MEMOIZES THE RESULTS BETWEEN CALLS, bcs each
 ;; time deepM-4 is clled it recreates the data stuctures in it
 ;; => this is the reason The Seasoned Schemer "17th Commandment"
 ;;    says to only use let and set! when there is a lambda between
@@ -667,7 +664,6 @@
 (defn deepM-4 [n]
   (let [n2r (atom {})]
     (letfn [(loc-deep [n1]
-              ;; (Thread/sleep 88)
               (if (= 0 n1)
                 "pizza"
                 (cons (loc-deepM (dec n1)) '())))
@@ -760,3 +756,323 @@
         (if (= a @x)
           0
           (f a))))))
+
+
+;;; --------------------------------------------------- ;;;
+;;; -----------------[ Chapter 17 ] ------------------- ;;;
+;;; --------------------------------------------------- ;;;
+
+;; corresponds to version of deepM on p. 128
+(def deepM-128
+  (let [n2r (atom {})
+        D (fn [n1]
+            (if (= 0 n1)
+              "pizza"
+              (cons (deepM-128 (dec n1)) '())))]
+    (fn [n]
+      (let [mem (get @n2r n nil)]
+        (if mem
+          mem
+          (let [ans (D n)]
+            (reset! n2r (assoc @n2r n ans))
+            ans))))))
+
+;; first version of deepM on p. 129
+(def deepM-129
+  (let [n2r (atom {})]
+    (fn [n]
+      (let [mem (get @n2r n nil)]
+        (if mem
+          mem
+          (let [ans ((fn [n1]    ;; <== replace this with a let stmt (p. 129)
+                       (if (= 0 n1)
+                         "pizza"
+                         (cons (deepM-129 (dec n1)) '()))) n)]
+            (reset! n2r (assoc @n2r n ans))
+            ans))))
+    )
+  )
+
+;; second version of deepM on p. 129
+;; replace the "lambda" with a let
+(def deepM-129-2
+  (let [n2r (atom {})]
+    (fn [n]
+      (let [mem (get @n2r n nil)]
+        (if mem
+          mem
+          (let [ans (let [n1 n]  ;; <== replaced fn with a let stmt (p. 129)
+                      (if (= 0 n1)
+                        "pizza"
+                        (cons (deepM-129-2 (dec n1)) '())))]
+            (reset! n2r (assoc @n2r n ans))
+            ans))))))
+
+
+(def set-counter (atom #(identity 0)))
+
+;; p.131: consC
+(def consC
+  (let [N (atom 0)]
+    (reset! set-counter #(reset! N %))
+    (fn [x y]
+      (reset! N (inc @N))
+      (cons x y))))
+
+
+(defn deep-with-consC [n]
+  (if (= 0 n)
+    "pizza"
+    (consC (deep-with-consC (dec n)) [])
+    )
+  )
+
+;; doesn't work (gets stackoverflow error) - ask why on stackoverflow?
+;;  probably because it calls f as well as itself and maybe lazy-seq
+;;  can't deal with that?
+(defn supercounter-lazy
+  "Takes a function argment and calls it 1000 times"
+  [f]
+  ;; TODO: add lazy-seq to this
+  (letfn [(S [n]
+            (lazy-seq
+             (if (zero? n)
+               (f n)
+               (do
+                 (f n)
+                 (S (dec n))
+                 )))
+            )]
+    (lazy-seq (S 10000))))
+
+
+(defn supercounter
+  "Takes a function argment and calls it 1000 times"
+  [f]
+  ;; TODO: add lazy-seq to this
+  (letfn [(S [n]
+            (if (zero? n)
+               (f n)
+               (do
+                 (f n)
+                 (S (dec n))
+                 )))]
+    (S 1000)))
+
+
+;; this one uses consC to count how many times it has
+;; called cons
+(def deepM-129-3
+  (let [n2r (atom {})]
+    (fn [n]
+      (let [mem (get @n2r n nil)]
+        (if mem
+          mem
+          (let [ans (let [n1 n]  ;; <== replaced fn with a let stmt (p. 129)
+                      (if (= 0 n1)
+                        "pizza"
+                        (consC (deepM-129-2 (dec n1)) '())))]
+            (reset! n2r (assoc @n2r n ans))
+            ans))))))
+
+
+(defn rember1*-consC
+  "Removes the first instance of +a+ found in list l, even when it
+     it is embedded in a sublist of l"
+  [a l]
+  ((fn R [ls]
+     (cond
+      (empty? ls) []
+      (= a (first ls)) (rest ls)
+      (atom? (first ls)) (consC (first ls) (R (rest ls)))
+      :else (let [sv (R (first ls))]
+              (if (= (first ls) sv) ;; if matches, then +a+ wasn't found and removed yet
+                (consC (first ls) (R (rest ls)))
+                (consC sv (rest ls)))))
+       ) l)
+    )
+
+
+;; LEFT OFF - next define set-counter blankly as below and then mod consC to have
+;; a set-counter section (not sure how to call it)
+;; TODO: best idea - do this in a Clojure way by:
+;;  * making a macro that calls set-counter before the method starts (could also make it thread safe)
+;;  * use the Clojure in Action (let-over-lambda?) style to get the count with a call
+;;    to the closure with :set
+
+;; adapted from p.131: consC
+(def consJ
+  (let [N (atom 0)]
+    (fn
+      ([x y]
+         (swap! N inc)
+         (cons x y))
+      ([cmd]
+         (condp = cmd
+           :get-count @N
+           :reset-count (reset! N 0))))))
+
+
+(defn deep-consJ [n]
+  (if (zero? n)
+    "pizza"
+    (lazy-seq
+     (consJ (deep-consJ (dec n)) [])))
+  )
+
+(defn deep-consJ2 [n]
+  (lazy-seq
+   (if (zero? n)
+    "pizza"
+    (consJ (deep-consJ2 (dec n)) []))))
+
+(defn deep-consJ3 [n]
+  (lazy-seq
+   (if (zero? n)
+    "pizza"
+    ;; NOTE: doesn't actually use consJ, just plain old cons
+    (cons (deep-consJ3 (dec n)) []))))
+
+;; from Joy of Clojure (p. 116)
+(defn lz-rec-step [s]
+  (lazy-seq
+   (if (seq s)
+     [(first s) (lz-rec-step (rest s))]
+     [])))
+
+
+;; not lazy version
+(defn rec-step [s]
+  (if (seq s)
+    [(first s) (rec-step (rest s))]
+    []))
+
+
+(def deepM-consJ
+  (let [n2r (atom {})]
+    (fn [n]
+      (let [mem (get @n2r n nil)]
+        (if mem
+          mem
+          ;; TODO: need to add lazy-seq somewhere
+          (let [ans (let [n1 n]
+                      (if (= 0 n1)
+                        "pizza"
+                        (consJ (deepM-consJ (dec n1)) '())))]
+            (reset! n2r (assoc @n2r n ans))
+            ans))))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; PLAYGROUND for closures based on Clojure in Action Ch. 13.3
+
+(defn new-user [login password email]
+  (let [nlookups (atom 0)]
+    (fn [arg]
+      (when (not= :lookups arg) (swap! nlookups inc))
+      (condp = arg
+        :login login
+        :password password
+        :email email
+        :lookups @nlookups
+        ))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; PLAYGROUND to test out let-over-lambda = delete later after done testing
+;; (defn let-over-lambda1 [food]
+;;   (let [x (atom "minestrone")]
+;;     ((fn []
+;;       (reset! x food)
+;;       (cons food (cons @x []))))))
+
+;; (defn let-over-lambda1b [food & lookup]
+;;   (when lookup (println ))
+;;   (let [x (atom "minestrone")]
+;;     ((fn []
+;;       (reset! x food)
+;;       (cons food (cons @x []))))))
+
+;; ;; another way to do let-over-lambda - use def, not defn
+;; ;; this is closer to the Scheme way of doing it
+;; (def let-over-lambda2
+;;   (let [x (atom "minestrone")]
+;;     (fn [food]
+;;       (reset! x food)
+;;       (cons food (cons @x [])))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+;;; --------------------------------------------------- ;;;
+;;; -----------------[ Chapter 18 ] ------------------- ;;;
+;;; --------------------------------------------------- ;;;
+
+;; Note - I wasn't able to grok how to get their versions
+;; of kons, kar and kdr working, so this chapter is quite
+;; incomplete
+
+(defn kons1 [kar kdr]
+  #(% kar kdr))
+
+;; the only way I can figure out to get kons to work
+(def kons
+  (fn [kar kdr]
+      ((fn [selector]
+         (selector kar kdr)) #(cons % %2))))
+
+(defn kar1 [c]
+  (c (fn [a d] a)))
+
+;; the only way I can figure out to get kar to work
+(defn kar [[a & d]] a)
+
+(defn kdr1 [c]
+  (c (fn [a d] d)))
+
+;; the only way I can figure out to get kdr to work
+(def kdr
+  (fn [[a & d]] d))
+
+(defn lots [n]
+  (if (zero? n)
+    '()
+    (kons :egg (lots (dec n)))))
+
+(defn lenkth [l]
+  (if (empty? l)
+    0
+    (inc (lenkth (kdr l))))
+  )
+
+(defn add-at-end
+  "Adds :egg to end of a list (using cons, traditional Lisp style)"
+  [l]
+  (if (empty? (kdr l))
+    (kons (first l) (kons :egg ()))
+    (kons (first l) (add-at-end (kdr l)))))
+
+
+(comment
+  (defn add-at-end-too
+    "Adds :egg to end of a list (using cons, traditional Lisp style)"
+    [l]
+    (letfn [(A [ls]
+              (if (empty? kdr ls)
+                ;; TODO: set-kdr is not defined and I have no idea what it is supposed to do
+                set-kdr ls (kons :egg ())
+                (A (kdr ls))
+                ))]))
+  )
+
+
+;;; --------------------------------------------------- ;;;
+;;; -----------------[ Chapter 19 ] ------------------- ;;;
+;;; --------------------------------------------------- ;;;
+
+;; ch. 19 deals with letcc - continuations, which there is no
+;; facility to do in Clojure (at least I don't know how to do it)
+
+;; LEFT OFF: bottom of p. 160 - haven't read all of ch. 19 yet ...

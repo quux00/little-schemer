@@ -462,7 +462,56 @@
   (load-file "test/seasoned_schemer/test/core.clj")
   (run-tests 'seasoned-schemer.test.core))
 
-;; (println (seasoned-schemer.macros/letrec [ev? (fn [n] (if (zero? n) true (od? (dec n))))
-;;                                           od? (fn [n] (if (zero? n) false (ev? (dec n))))]
-;;                                          (od? 11)))
+
+;;; --------------------------------------------------- ;;;
+;;; -----------------[ Chapter 17 ] ------------------- ;;;
+;;; --------------------------------------------------- ;;;
+
+(deftest test-deepM-128
+  (is (= '(["pizza"]) (deepM-128 2)))
+  (is (= '([[[[[[["pizza"]]]]]]]) (deepM-128 8)))
+  )
+
+
+(deftest test-deepM-129
+  (is (= '(["pizza"]) (deepM-129 2)))
+  (is (= '([[[[[[["pizza"]]]]]]]) (deepM-129 8)))
+  )
+
+(deftest test-deepM-129-2
+  (is (= '([["pizza"]]) (deepM-129-2 3)))
+  (is (= '([[[[[[["pizza"]]]]]]]) (deepM-129-2 8)))
+  )
+
+(deftest test-deep-with-consC
+  (is (= '([["pizza"]]) (deep-with-consC 3)))
+  (is (= '([[[[[[["pizza"]]]]]]]) (deep-with-consC 8)))
+  )
+
+(deftest test-deepM-129-3
+  (is (= "pizza" (deepM-129-3 0)))
+  (is (= '([[["pizza"]]]) (deepM-129-3 4)))
+  (is (= '([[[[[[["pizza"]]]]]]]) (deepM-129-3 8)))
+  )
+
+
+;;; --------------------------------------------------- ;;;
+;;; -----------------[ Chapter 18 ] ------------------- ;;;
+;;; --------------------------------------------------- ;;;
+
+(deftest test-lots
+  (is (= (lots 3) '(:egg :egg :egg)))
+  (is (= (lots 2) '(:egg :egg)))
+  
+  )
+
+(deftest test-lenkth
+  (is (= 3 (lenkth '(:a :b :c))))
+  (is (= 1 (lenkth '(:a))))
+  )
+
+(deftest test-add-at-end
+  (is (= '(:egg :egg :egg) (add-at-end '(:egg :egg))))
+  )
+
 
