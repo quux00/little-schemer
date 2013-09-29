@@ -47,9 +47,5 @@ seasoned-schemer.core=> (rt)  ;; I've added this to run all the tests, reloading
 
 ## Status
 
-For the Little Schemer, I have finished up through chapter 8 of with Clojure and in the middle of chapter 6 for Scala.  For the Seasoned Schemer, I am currently on chapter 12 (the second chapter of the second book).
-
-More coming soon.
-
 Author         :  Michael Peterson  
 Last updated   :  Dec 2011
